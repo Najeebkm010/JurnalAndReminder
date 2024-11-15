@@ -7,15 +7,14 @@ const session = require("express-session");
 // Initialize the app
 const app = express();
 
-// MongoDB connection URI (make sure this is correct)
-const mongoURI =
-  "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+// MongoDB connection URI
+const mongoURI = process.env.MONGO_URI;
 
-// Connect to MongoDB (remove deprecated options)
+// Connect to MongoDB
 mongoose
-  .connect(mongoURI)
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.log("MongoDB connection error:", err));
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
