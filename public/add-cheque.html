@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Cheque</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- Title of the page -->
+      <h2>Add New Cheque</h2>
+
+      <!-- Form container for adding cheque -->
+      <div class="form-container">
+        <form action="/add-cheque" method="POST">
+          <!-- Signed Date input -->
+          <div class="form-group">
+            <label for="signedDate">Signed Date:</label>
+            <input type="date" id="signedDate" name="signedDate" required />
+          </div>
+
+          <!-- Cheque Number input -->
+          <div class="form-group">
+            <label for="chequeNumber">Cheque Number:</label>
+            <input
+              type="text"
+              id="chequeNumber"
+              name="chequeNumber"
+              placeholder="Enter cheque number"
+              required
+            />
+          </div>
+
+          <!-- Amount input -->
+          <div class="form-group">
+            <label for="amount">Amount:</label>
+            <input
+              type="number"
+              id="amount"
+              name="amount"
+              placeholder="Enter cheque amount"
+              required
+            />
+          </div>
+
+          <!-- Release Date input -->
+          <div class="form-group">
+            <label for="releaseDate">Release Date:</label>
+            <input type="date" id="releaseDate" name="releaseDate" required />
+          </div>
+
+          <!-- Remark input -->
+          <div class="form-group">
+            <label for="remark">Remark:</label>
+            <textarea
+              id="remark"
+              name="remark"
+              rows="4"
+              placeholder="Enter any remarks"
+              required
+            ></textarea>
+          </div>
+
+          <!-- Submit button -->
+          <button type="submit" class="btn">Add Cheque</button>
+        </form>
+      </div>
+
+      <!-- Back button -->
+      <div class="action-buttons">
+        <a href="/cheque-management" class="btn">Back to Cheque Management</a>
+      </div>
+    </div>
+  </body>
+</html>

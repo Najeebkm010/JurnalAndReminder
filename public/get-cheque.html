@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Get Cheques</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Title of the page -->
+      <h2>Filter and View Cheques</h2>
+
+      <!-- Form for filtering cheques by signed date -->
+      <div class="form-container">
+        <form id="cheque-filter-form">
+          <div class="form-group">
+            <label for="startDate">Start Date (Signed Date):</label>
+            <input type="date" id="startDate" name="startDate" />
+          </div>
+
+          <div class="form-group">
+            <label for="endDate">End Date (Signed Date):</label>
+            <input type="date" id="endDate" name="endDate" />
+          </div>
+
+          <button type="submit" class="btn">Filter Cheques</button>
+        </form>
+      </div>
+
+      <!-- Display filtered cheques in a user-friendly table -->
+      <h3>Filtered Cheques</h3>
+      <div id="cheque-list">
+        <!-- Filtered cheque data will appear here -->
+        <p>Use the filter above to view cheques.</p>
+      </div>
+
+      <!-- Button to download cheques -->
+      <div class="action-buttons">
+        <button id="download-btn" class="btn">Download Cheques as CSV</button>
+        <a href="/cheque-management" class="btn">Back to Cheque Management</a>
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+        // Handle form submission
+        $("#cheque-filter-form").submit(function (event) {
+          event.preventDefault(); // Prevent default form submission
+
+          // Get form data
+          const startDate = $("#startDate").val();
+          const endDate = $("#endDate").val();
+
+          // Send AJAX request to fetch cheques based on the signed date filter
+          $.ajax({
+            url: "/get-cheque",
+            method: "POST",
+            data: { startDate, endDate },
+            success: function (response) {
+              if (response.length > 0) {
+                // If data is returned, display it in a table
+                let chequeTable = `
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Cheque Number</th>
+                      <th>Signed Date</th>
+                      <th>Amount</th>
+                      <th>Release Date</th>
+                      <th>Remark</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+
+                // Loop through cheques and populate the table rows
+                response.forEach((cheque) => {
+                  chequeTable += `
+                  <tr>
+                    <td>${cheque.chequeNumber}</td>
+                    <td>${new Date(cheque.signedDate).toLocaleDateString()}</td>
+                    <td>${cheque.amount}</td>
+                    <td>${new Date(cheque.releaseDate).toLocaleDateString()}</td>
+                    <td>${cheque.remark}</td>
+                  </tr>`;
+                });
+
+                chequeTable += `</tbody></table>`;
+                $("#cheque-list").html(chequeTable);
+              } else {
+                // If no cheques found, display a message
+                $("#cheque-list").html(
+                  "<p>No cheques found for the selected signed date range.</p>",
+                );
+              }
+            },
+            error: function () {
+              alert("Error fetching cheques.");
+            },
+          });
+        });
+
+        // Handle the download CSV functionality
+        $("#download-btn").click(function () {
+          window.location.href = "/download-cheques"; // Initiates the CSV download
+        });
+      });
+    </script>
+  </body>
+</html>
