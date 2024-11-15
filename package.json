@@ -2,10 +2,10 @@
   "name": "nodejs",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
-    "vercel-start": "node index.js"
+    "start": "node server.js",
+    "vercel-start": "node server.js"
   },
   "keywords": [],
   "author": "",
