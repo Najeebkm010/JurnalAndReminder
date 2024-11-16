@@ -8,7 +8,7 @@ const session = require("express-session");
 const app = express();
 
 // MongoDB connection URI
-const mongoURI = process.env.MONGO_URI;
+const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
 
 // Connect to MongoDB
 mongoose
@@ -26,11 +26,6 @@ const chequeSchema = new mongoose.Schema({
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
-
-if (!mongoURI) {
-  console.error("Error: MONGO_URI environment variable not set.");
-  process.exit(1); // Exit the application
-}
 
 // Middleware for session handling
 app.use(
