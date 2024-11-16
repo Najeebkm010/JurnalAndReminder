@@ -27,6 +27,11 @@ const chequeSchema = new mongoose.Schema({
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
 
+if (!mongoURI) {
+  console.error("Error: MONGO_URI environment variable not set.");
+  process.exit(1); // Exit the application
+}
+
 // Middleware for session handling
 app.use(
   session({
