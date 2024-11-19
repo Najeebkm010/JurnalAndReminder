@@ -19,8 +19,6 @@ const chequeSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
-  email: { type: String, default: "najeebkm010@gmail.com" }, // Predefined email
-  phone: { type: String, default: "+971529536203" }, // Predefined phone number
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
@@ -72,18 +70,12 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
-  // Predefined email and phone number
-  const predefinedEmail = "najeebkm010@gmail.com";  // Set your predefined email here
-  const predefinedPhone = "+971529536203";          // Set your predefined phone number here
-
   const newCheque = new Cheque({
     signedDate,
     chequeNumber,
     amount,
     releaseDate,
     remark,
-    email: predefinedEmail,  // Automatically store the predefined email
-    phone: predefinedPhone,  // Automatically store the predefined phone number
   });
 
   newCheque
@@ -124,8 +116,7 @@ app.get("/download-cheques", (req, res) => {
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
-        // Use backticks (`) for template literals and correct interpolation
-        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+        csv += ${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n;
       });
 
       res.header("Content-Type", "text/csv");
@@ -161,6 +152,26 @@ app.get("/get-cheque", (req, res) => {
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
   }
+});
+
+// Cron job for sending notifications 2 days before cheque release
+cron.schedule("0 9 * * *", () => {
+  console.log("Running scheduled task to check for cheque reminders");
+
+  const today = new Date();
+  today.setDate(today.getDate() + 2); // Get the date two days from now
+  today.setHours(0, 0, 0, 0); // Set the time to midnight for accurate comparison
+
+  Cheque.find({ releaseDate: today })
+    .then((cheques) => {
+      cheques.forEach((cheque) => {
+        // Logic to send notifications (you can add a push notification or SMS service here)
+        console.log(Reminder: Cheque number ${cheque.chequeNumber} will be released in two days.);
+      });
+    })
+    .catch((err) => {
+      console.log("Error fetching cheques for reminders:", err);
+    });
 });
 
 // Connect to MongoDB
