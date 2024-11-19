@@ -19,6 +19,8 @@ const chequeSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
+  email: { type: String, default: "default@example.com" }, // Predefined email
+  phone: { type: String, default: "+1234567890" }, // Predefined phone number
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
