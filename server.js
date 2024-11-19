@@ -19,6 +19,8 @@ const chequeSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
+  email: { type: String, default: "najeebkm010@gmail.com" },  // Predefined email
+  phoneNumber: { type: String, default: "+971529536203" },  // Predefined phone number
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
@@ -57,22 +59,8 @@ app.post("/login", (req, res) => {
 });
 
 // Route for the dashboard (after login)
-app.get("/cheque-management", (req, res) => {
-  if (req.session.user) {
-    // Check if user is logged in
-    res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
-  } else {
-    res.redirect("/login"); // If not logged in, redirect to login page
-  }
-});
-
-// Route to add a cheque
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
-
-  // You can pre-define these values or get them from the user input
-  const email = "najeebkm010@gmail.com";  // Replace with predefined email
-  const phoneNumber = "+971529536203";  // Replace with predefined phone number
 
   const newCheque = new Cheque({
     signedDate,
@@ -80,14 +68,13 @@ app.post("/add-cheque", (req, res) => {
     amount,
     releaseDate,
     remark,
-    email,
-    phoneNumber,
+    // No need to collect email and phone, they are predefined in schema
   });
 
   newCheque
     .save()
     .then(() => {
-      res.redirect("/get-cheque"); // After saving, redirect to /get-cheque to view cheques
+      res.redirect("/get-cheque");
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
