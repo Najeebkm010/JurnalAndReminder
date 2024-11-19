@@ -95,24 +95,48 @@ app.post("/add-cheque", (req, res) => {
 });
 
 // Route to get cheques with optional date filter
+// Route to get cheques with optional date filter (using GET method)
 app.get("/get-cheque", (req, res) => {
-  if (req.session.user) {
-    // Query for cheques in the database
-    Cheque.find() // You can also apply filters like startDate and endDate if needed
-      .then((cheques) => {
-        if (cheques.length > 0) {
-          res.json(cheques); // Return the cheques as JSON if they exist
-        } else {
-          res.status(404).send("No cheques found.");
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching cheques:", err); // Log the error details for debugging
-        res.status(500).send("Error fetching cheques.");
-      });
-  } else {
-    res.redirect("/login"); // If not logged in, redirect to login page
+  const { startDate, endDate } = req.query;  // Use req.query to get query parameters
+
+  // Create a query object based on signed date
+  const query = {};
+  if (startDate && endDate) {
+    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
   }
+
+  // Query the database for cheques within the filtered date range
+  Cheque.find(query)
+    .then((cheques) => {
+      if (cheques.length > 0) {
+        res.json(cheques);  // Return the cheques as JSON if they exist
+      } else {
+        res.status(404).send("No cheques found.");
+      }
+    })
+    .catch((err) => {
+      console.log("Error fetching cheques:", err);
+      res.status(500).send("Server error");
+    });
+});
+
+// Route to download cheques as CSV
+app.get("/download-cheques", (req, res) => {
+  Cheque.find()
+    .then((cheques) => {
+      let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
+      cheques.forEach((cheque) => {
+        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;  // Fixed string interpolation
+      });
+
+      res.header("Content-Type", "text/csv");
+      res.attachment("cheques.csv");
+      res.send(csv);
+    })
+    .catch((err) => {
+      console.log("Error downloading cheques:", err);
+      res.status(500).send("Server error");
+    });
 });
 
 
