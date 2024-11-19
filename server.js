@@ -163,26 +163,6 @@ app.get("/get-cheque", (req, res) => {
   }
 });
 
-// Cron job for sending notifications 2 days before cheque release
-cron.schedule("0 9 * * *", () => {
-  console.log("Running scheduled task to check for cheque reminders");
-
-  const today = new Date();
-  today.setDate(today.getDate() + 2); // Get the date two days from now
-  today.setHours(0, 0, 0, 0); // Set the time to midnight for accurate comparison
-
-  Cheque.find({ releaseDate: today })
-    .then((cheques) => {
-      cheques.forEach((cheque) => {
-        // Logic to send notifications (you can add a push notification or SMS service here)
-        console.log(Reminder: Cheque number ${cheque.chequeNumber} will be released in two days.);
-      });
-    })
-    .catch((err) => {
-      console.log("Error fetching cheques for reminders:", err);
-    });
-});
-
 // Connect to MongoDB
 mongoose
   .connect(mongoURI, {
