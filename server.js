@@ -68,13 +68,12 @@ app.post("/add-cheque", (req, res) => {
     amount,
     releaseDate,
     remark,
-    // No need to collect email and phone, they are predefined in schema
   });
 
   newCheque
     .save()
     .then(() => {
-      res.redirect("/get-cheque");
+      res.redirect("/get-cheque"); // After saving, redirect to /get-cheque to view cheques
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
