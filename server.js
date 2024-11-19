@@ -19,8 +19,6 @@ const chequeSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
-  email: { type: String, default: "najeebkm010@gmail.com" },  // Predefined email
-  phoneNumber: { type: String, default: "+971529536203" },  // Predefined phone number
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
@@ -59,6 +57,16 @@ app.post("/login", (req, res) => {
 });
 
 // Route for the dashboard (after login)
+app.get("/cheque-management", (req, res) => {
+  if (req.session.user) {
+    // Check if user is logged in
+    res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
+  } else {
+    res.redirect("/login"); // If not logged in, redirect to login page
+  }
+});
+
+// Route to add a cheque
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
@@ -108,7 +116,7 @@ app.get("/download-cheques", (req, res) => {
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
-        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+        csv += ${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n;
       });
 
       res.header("Content-Type", "text/csv");
@@ -158,7 +166,7 @@ cron.schedule("0 9 * * *", () => {
     .then((cheques) => {
       cheques.forEach((cheque) => {
         // Logic to send notifications (you can add a push notification or SMS service here)
-        console.log(`Reminder: Cheque number ${cheque.chequeNumber} will be released in two days.`);
+        console.log(Reminder: Cheque number ${cheque.chequeNumber} will be released in two days.);
       });
     })
     .catch((err) => {
@@ -179,5 +187,5 @@ mongoose
 // Server setup
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(Server running on port ${PORT});
 });
