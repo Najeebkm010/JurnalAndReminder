@@ -4,8 +4,6 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
 
-const cron = require('node-cron');
-
 // Initialize the app
 const app = express();
 
@@ -29,7 +27,7 @@ app.use(
     secret: "mysecret", // Secret for signing session cookies
     resave: false, // Don't save unmodified sessions
     saveUninitialized: true, // Save a session that is new but not modified
-  }),
+  })
 );
 
 // Middleware
