@@ -4,8 +4,6 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
 
-const cron = require("node-cron");
-
 // Initialize the app
 const app = express();
 
@@ -35,9 +33,6 @@ app.use(
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-// Serve static files (HTML, CSS)
-app.use(express.static(path.join(__dirname, "public")));
 
 // Route for login (GET method to serve the login page)
 app.get("/login", (req, res) => {
@@ -116,7 +111,7 @@ app.get("/download-cheques", (req, res) => {
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
-        csv += ${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n;
+        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
       });
 
       res.header("Content-Type", "text/csv");
@@ -126,51 +121,6 @@ app.get("/download-cheques", (req, res) => {
     .catch((err) => {
       console.log("Error downloading cheques:", err);
       res.status(500).send("Server error");
-    });
-});
-
-// Route for the home page and redirect to login page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "welcome.html"));
-});
-
-// Route to add cheque page
-app.get("/add-cheque", (req, res) => {
-  if (req.session.user) {
-    // Check if user is logged in
-    res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
-  } else {
-    res.redirect("/login"); // If not logged in, redirect to login page
-  }
-});
-
-// Route to view cheques page
-app.get("/get-cheque", (req, res) => {
-  if (req.session.user) {
-    // Check if user is logged in
-    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
-  } else {
-    res.redirect("/login"); // If not logged in, redirect to login page
-  }
-});
-
-// Cron job for sending notifications 2 days before cheque release
-cron.schedule("0 9 * * *", () => {
-  console.log("Running scheduled task to check for cheque reminders");
-
-  const today = new Date();
-  today.setDate(today.getDate() + 2); // Get the date two days from now
-  today.setHours(0, 0, 0, 0); // Set the time to midnight for accurate comparison
-
-  Cheque.find({ releaseDate: today })
-    .then((cheques) => {
-      cheques.forEach((cheque) => {
-        // Logic to send notifications (you can add a push notification or SMS service here)
-        console.log(Reminder: Cheque number ${cheque.chequeNumber} will be released in two days.);
-      });
-    })
-    .catch((err) => {
-      console.log("Error fetching cheques for reminders:", err);
     });
 });
 
@@ -187,5 +137,5 @@ mongoose
 // Server setup
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(Server running on port ${PORT});
+  console.log(`Server running on port ${PORT}`);
 });
