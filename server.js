@@ -17,6 +17,8 @@ const chequeSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
+  email: { type: String, required: true },  // Predefined email
+  phoneNumber: { type: String, required: true },  // Predefined phone number
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
@@ -68,12 +70,18 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
+  // Predefined email and phone number
+  const predefinedEmail = "najeebkm010@gmail.com";
+  const predefinedPhone = "+971529536203";
+
   const newCheque = new Cheque({
     signedDate,
     chequeNumber,
     amount,
     releaseDate,
     remark,
+    email: predefinedEmail,  // Add predefined email
+    phoneNumber: predefinedPhone,  // Add predefined phone number
   });
 
   newCheque
