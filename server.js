@@ -3,6 +3,14 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
+//Mail and sms
+const nodemailer = require("nodemailer");
+const twilio = require("twilio");
+const cron = require("node-cron");
+const moment = require("moment");
+
+
+
 
 // Initialize the app
 const app = express();
@@ -177,6 +185,82 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
   });
 });
+
+
+// Setup Twilio client SMS
+const client = twilio("AC68aceabef206fe8969136b5b7fce9c55", "5c396662082f78d9b5d5ef7d739d99d1");
+
+const sendReminderSMS = (phoneNumber, chequeNumber, releaseDate, amount) => {
+  client.messages
+    .create({
+      body: `Reminder: Your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
+      from: "+12563644560",  // Replace with your Twilio phone number
+      to: phoneNumber,
+    })
+    .then((message) => console.log("SMS sent: " + message.sid))
+    .catch((error) => console.log("Error sending SMS:", error));
+};
+
+// Setup email transporter using SendGrid
+const transporter = nodemailer.createTransport({
+  service: "SendGrid",
+  auth: {
+    user: "apikey",  // Use 'apikey' as the username for SendGrid
+    pass: "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",  // Replace with your SendGrid API key
+  },
+});
+
+// Function to send email
+const sendReminderEmail = (email, chequeNumber, releaseDate, amount) => {
+  const mailOptions = {
+    from: "y0utubef0ry0u2@gmail.com",
+    to: email,
+    subject: `Reminder: Cheque Release Date Approaching`,
+    text: `This is a reminder that your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log("Error sending email:", error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+};
+
+// Function to check for cheques and send notifications
+const checkForChequesToNotify = () => {
+  const twoDaysFromNow = moment().add(2, "days").startOf("day").toDate();
+
+  Cheque.find({ releaseDate: twoDaysFromNow })
+    .then((cheques) => {
+      cheques.forEach((cheque) => {
+        // Send email and SMS reminder for each cheque
+        sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+        sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+      });
+    })
+    .catch((err) => {
+      console.log("Error fetching cheques:", err);
+    });
+};
+
+// Schedule the job to run every day at midnight
+cron.schedule("0 0 * * *", () => {
+  console.log("Checking for cheques to notify...");
+  checkForChequesToNotify();
+});
+
+const notificationSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
+  chequeNumber: { type: String, required: true },
+  amount: { type: Number, required: true },
+  releaseDate: { type: Date, required: true },
+  isNotified: { type: Boolean, default: false }, // To track if notification was sent
+});
+
+const Notification = mongoose.model("Notification", notificationSchema);
 
 mongoose
   .connect(mongoURI, {
