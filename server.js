@@ -97,11 +97,24 @@ app.post("/add-cheque", (req, res) => {
 // Route to get cheques with optional date filter
 app.get("/get-cheque", (req, res) => {
   if (req.session.user) {
-    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
+    // Query for cheques in the database
+    Cheque.find() // You can also apply filters like startDate and endDate if needed
+      .then((cheques) => {
+        if (cheques.length > 0) {
+          res.json(cheques); // Return the cheques as JSON if they exist
+        } else {
+          res.status(404).send("No cheques found.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching cheques:", err); // Log the error details for debugging
+        res.status(500).send("Error fetching cheques.");
+      });
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
   }
 });
+
 
 // Route to logout
 app.get("/logout", (req, res) => {
