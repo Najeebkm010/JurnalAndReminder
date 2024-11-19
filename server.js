@@ -72,12 +72,18 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
+  // Predefined email and phone number
+  const predefinedEmail = "najeebkm010@gmail.com";  // Set your predefined email here
+  const predefinedPhone = "+971529536203";          // Set your predefined phone number here
+
   const newCheque = new Cheque({
     signedDate,
     chequeNumber,
     amount,
     releaseDate,
     remark,
+    email: predefinedEmail,  // Automatically store the predefined email
+    phone: predefinedPhone,  // Automatically store the predefined phone number
   });
 
   newCheque
