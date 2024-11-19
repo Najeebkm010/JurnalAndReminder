@@ -70,7 +70,10 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
-  // Predefined email and phone number
+  if (!signedDate || !chequeNumber || !amount || !releaseDate || !remark) {
+    return res.status(400).send("Missing required fields");
+  }
+
   const predefinedEmail = "najeebkm010@gmail.com";
   const predefinedPhone = "+971529536203";
 
@@ -80,14 +83,14 @@ app.post("/add-cheque", (req, res) => {
     amount,
     releaseDate,
     remark,
-    email: predefinedEmail,  // Add predefined email
-    phoneNumber: predefinedPhone,  // Add predefined phone number
+    email: predefinedEmail,
+    phoneNumber: predefinedPhone,
   });
 
   newCheque
     .save()
     .then(() => {
-      res.redirect("/get-cheque"); // After saving, redirect to /get-cheque to view cheques
+      res.redirect("/get-cheque");
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
@@ -99,13 +102,11 @@ app.post("/add-cheque", (req, res) => {
 app.post("/get-cheque", (req, res) => {
   const { startDate, endDate } = req.body;
 
-  // Create a query object based on signed date
   const query = {};
   if (startDate && endDate) {
     query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
   }
 
-  // Query the database for cheques within the filtered date range
   Cheque.find(query)
     .then((cheques) => {
       res.json(cheques);
@@ -118,7 +119,14 @@ app.post("/get-cheque", (req, res) => {
 
 // Route to download cheques as CSV
 app.get("/download-cheques", (req, res) => {
-  Cheque.find()
+  const { startDate, endDate } = req.query;
+
+  const query = {};
+  if (startDate && endDate) {
+    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+  }
+
+  Cheque.find(query)
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
@@ -158,6 +166,16 @@ app.get("/get-cheque", (req, res) => {
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
   }
+});
+
+//Rout to logout page
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).send("Failed to log out");
+    }
+    res.redirect("/login");
+  });
 });
 
 mongoose
