@@ -62,6 +62,15 @@ app.get("/cheque-management", (req, res) => {
   }
 });
 
+// Route to add a cheque page
+app.get("/add-cheque", (req, res) => {
+  if (req.session.user) {
+    res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
+  } else {
+    res.redirect("/login"); // If not logged in, redirect to login page
+  }
+});
+
 // Route to add a cheque
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
@@ -77,7 +86,7 @@ app.post("/add-cheque", (req, res) => {
   newCheque
     .save()
     .then(() => {
-      res.redirect("/get-cheque");
+      res.redirect("/get-cheque"); // After saving, redirect to /get-cheque
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
@@ -86,22 +95,22 @@ app.post("/add-cheque", (req, res) => {
 });
 
 // Route to get cheques with optional date filter
-app.post("/get-cheque", (req, res) => {
-  const { startDate, endDate } = req.body;
-
-  const query = {};
-  if (startDate && endDate) {
-    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+app.get("/get-cheque", (req, res) => {
+  if (req.session.user) {
+    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
+  } else {
+    res.redirect("/login"); // If not logged in, redirect to login page
   }
+});
 
-  Cheque.find(query)
-    .then((cheques) => {
-      res.json(cheques);
-    })
-    .catch((err) => {
-      console.log("Error fetching cheques:", err);
-      res.status(500).send("Server error");
-    });
+// Route to logout
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      return res.status(500).send("Error logging out.");
+    }
+    res.redirect("/login"); // Redirect to login after logout
+  });
 });
 
 // Connect to MongoDB
