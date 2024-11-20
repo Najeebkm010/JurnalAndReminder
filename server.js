@@ -42,8 +42,6 @@ const app = express();
 const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
 
 // Define a Cheque Schema
-const mongoose = require("mongoose");
-
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
   releaseDate: { type: Date, required: true },
