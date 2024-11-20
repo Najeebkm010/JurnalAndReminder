@@ -126,6 +126,8 @@ app.post("/get-cheque", (req, res) => {
 });
 
 // Route to download cheques as CSV
+const XLSX = require("xlsx");
+
 app.get("/download-cheques", (req, res) => {
   const { startDate, endDate } = req.query;
 
@@ -136,20 +138,44 @@ app.get("/download-cheques", (req, res) => {
 
   Cheque.find(query)
     .then((cheques) => {
-      let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
-      cheques.forEach((cheque) => {
-        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
-      });
+      // Prepare the data
+      const data = cheques.map((cheque) => ({
+        "Cheque Number": cheque.chequeNumber,
+        "Signed Date": moment(cheque.signedDate).format("DD/MM/YYYY"),
+        "Amount": cheque.amount,
+        "Release Date": moment(cheque.releaseDate).format("DD/MM/YYYY"),
+        "Remark": cheque.remark,
+      }));
 
-      res.header("Content-Type", "text/csv");
-      res.attachment("cheques.csv");
-      res.send(csv);
+      // Create the worksheet
+      const ws = XLSX.utils.json_to_sheet(data);
+
+      // Add styling (bold header and blue color)
+      const range = XLSX.utils.decode_range(ws['!ref']); // Get the range of the worksheet
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: 0, c: col })];
+        if (cell) {
+          cell.s = { font: { bold: true, color: { rgb: "0000FF" } }, border: { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } } };
+        }
+      }
+
+      // Write to buffer and send as download
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Cheques");
+      const fileBuffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
+
+      // Set the headers for file download
+      res.header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.header("Content-Disposition", "attachment; filename=cheques.xlsx");
+
+      res.send(fileBuffer);
     })
     .catch((err) => {
       console.log("Error downloading cheques:", err);
       res.status(500).send("Server error");
     });
 });
+
 
 // Route for the home page and redirect to login page
 app.get("/", (req, res) => {
