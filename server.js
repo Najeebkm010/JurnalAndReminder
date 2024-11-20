@@ -150,18 +150,47 @@ app.get("/download-cheques", (req, res) => {
       // Create the worksheet
       const ws = XLSX.utils.json_to_sheet(data);
 
-      // Add styling (bold header and blue color)
+      // Apply styling: make header bold, blue, and add borders
       const range = XLSX.utils.decode_range(ws['!ref']); // Get the range of the worksheet
       for (let col = range.s.c; col <= range.e.c; col++) {
         const cell = ws[XLSX.utils.encode_cell({ r: 0, c: col })];
         if (cell) {
-          cell.s = { font: { bold: true, color: { rgb: "0000FF" } }, border: { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } } };
+          // Set bold font and blue color for headers
+          cell.s = {
+            font: { bold: true, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "4F81BD" } },  // Blue background color
+            border: { 
+              top: { style: "thin", color: { rgb: "000000" } }, 
+              left: { style: "thin", color: { rgb: "000000" } }, 
+              bottom: { style: "thin", color: { rgb: "000000" } }, 
+              right: { style: "thin", color: { rgb: "000000" } } 
+            }
+          };
         }
       }
 
-      // Write to buffer and send as download
+      // Apply borders to the rest of the cells
+      for (let row = range.s.r + 1; row <= range.e.r; row++) {
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: row, c: col })];
+          if (cell) {
+            // Add borders for all cells
+            cell.s = cell.s || {};
+            cell.s.border = { 
+              top: { style: "thin", color: { rgb: "000000" } }, 
+              left: { style: "thin", color: { rgb: "000000" } }, 
+              bottom: { style: "thin", color: { rgb: "000000" } }, 
+              right: { style: "thin", color: { rgb: "000000" } } 
+            };
+          }
+        }
+      }
+
+      // Create a new workbook and append the sheet
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Cheques");
+
+      // Write to buffer and send as download
       const fileBuffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
 
       // Set the headers for file download
@@ -175,6 +204,7 @@ app.get("/download-cheques", (req, res) => {
       res.status(500).send("Server error");
     });
 });
+
 
 
 // Route for the home page and redirect to login page
