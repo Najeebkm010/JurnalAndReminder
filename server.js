@@ -6,7 +6,6 @@ const session = require("express-session");
 //Mail and sms
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
-const moment = require("moment");
 const moment = require('moment-timezone');
 const cron = require('node-cron');
 
