@@ -128,112 +128,95 @@ app.post("/get-cheque", (req, res) => {
 
 // Route to download cheques as CSV
 // Route to download cheques as Excel
+// Route to download cheques as Excel
 app.get("/download-cheques-excel", (req, res) => {
   const { startDate, endDate } = req.query;
 
-  // Replace this with your MongoDB query to fetch cheques
-  const cheques = [
-    { chequeNumber: '12345', signedDate: '2024-01-01', amount: 100, releaseDate: '2024-01-10', remark: 'Sample Cheque' },
-    // Add more data here
-  ];
-
-  const data = [];
-  // Header formatting
-  const headerStyle = {
-    font: { bold: true, color: { rgb: "FFFFFF" } },
-    alignment: { horizontal: "center", vertical: "center" },
-    fill: { fgColor: { rgb: "4F81BD" } }, // Blue background color
-    border: {
-      top: { style: "thin", color: { rgb: "000000" } },
-      left: { style: "thin", color: { rgb: "000000" } },
-      bottom: { style: "thin", color: { rgb: "000000" } },
-      right: { style: "thin", color: { rgb: "000000" } }
-    }
-  };
-
-  // Header Row
-  data.push([
-    "Cheque No.",
-    "Signed Date",
-    "Cheque Amount (AED)",
-    "Release Date",
-    "Remark"
-  ]);
-
-  // Adding Data Rows
-  cheques.forEach((cheque) => {
-    const signedDateFormatted = moment(cheque.signedDate).format("DD/MM/YYYY");
-    const releaseDateFormatted = moment(cheque.releaseDate).format("DD/MM/YYYY");
-
-    data.push([
-      cheque.chequeNumber,
-      signedDateFormatted,
-      cheque.amount,
-      releaseDateFormatted,
-      cheque.remark,
-    ]);
-  });
-
-  // Create worksheet and apply header styles
-  const ws = xlsx.utils.aoa_to_sheet(data);
-  for (let i = 0; i < 5; i++) {
-    const cellAddress = { r: 0, c: i };
-    if (!ws[cellAddress]) ws[cellAddress] = {};
-    ws[cellAddress].s = headerStyle;
+  const query = {};
+  if (startDate && endDate) {
+    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
   }
 
-  // Create workbook
-  const wb = xlsx.utils.book_new();
-  xlsx.utils.book_append_sheet(wb, ws, "Cheques");
+  Cheque.find(query)
+    .then((cheques) => {
+      const data = [];
+      
+      // Define styles for header cells
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: "4F81BD" } }, // Blue background color
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
 
-  // Set response headers for file download
-  res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-  res.setHeader("Content-Disposition", "attachment; filename=cheques.xlsx");
+      // Add headers
+      data.push([
+        "Cheque No.",
+        "Signed Date",
+        "Cheque Amount (AED)",
+        "Release Date",
+        "Remark"
+      ]);
 
-  // Send the Excel file
-  res.send(xlsx.write(wb, { bookType: "xlsx", type: "buffer" }));
-});
+      // Formatting the rows and applying border styles
+      cheques.forEach((cheque) => {
+        const signedDateFormatted = moment(cheque.signedDate).format("DD/MM/YYYY");
+        const releaseDateFormatted = moment(cheque.releaseDate).format("DD/MM/YYYY");
 
-// Server setup
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+        data.push([
+          cheque.chequeNumber,
+          signedDateFormatted,
+          cheque.amount,
+          releaseDateFormatted,
+          cheque.remark,
+        ]);
+      });
 
+      // Create a worksheet with the data
+      const ws = xlsx.utils.aoa_to_sheet(data);
 
-// Route for the home page and redirect to login page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "welcome.html"));
-});
+      // Apply styles to the header row
+      for (let i = 0; i < 5; i++) {
+        const cellAddress = { r: 0, c: i }; // 0th row (header row), i-th column
+        if (!ws[cellAddress]) ws[cellAddress] = {}; // Initialize cell if undefined
+        ws[cellAddress].s = headerStyle;
+      }
 
-// Route to add cheque page
-app.get("/add-cheque", (req, res) => {
-  if (req.session.user) {
-    // Check if user is logged in
-    res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
-  } else {
-    res.redirect("/login"); // If not logged in, redirect to login page
-  }
-});
+      // Apply borders to all cells
+      for (let row = 0; row < data.length; row++) {
+        for (let col = 0; col < data[row].length; col++) {
+          const cellAddress = { r: row, c: col };
+          if (!ws[cellAddress]) ws[cellAddress] = {}; // Initialize cell if undefined
+          if (!ws[cellAddress].s) ws[cellAddress].s = {}; // Initialize style if undefined
+          ws[cellAddress].s.border = {
+            top: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          };
+        }
+      }
 
-// Route to view cheques page
-app.get("/get-cheque", (req, res) => {
-  if (req.session.user) {
-    // Check if user is logged in
-    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
-  } else {
-    res.redirect("/login"); // If not logged in, redirect to login page
-  }
-});
+      // Create a workbook and append the worksheet
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Cheques");
 
-//Rout to logout page
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).send("Failed to log out");
-    }
-    res.redirect("/login");
-  });
+      // Set headers for the download response
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", "attachment; filename=cheques.xlsx");
+
+      // Send the Excel file
+      res.send(xlsx.write(wb, { bookType: "xlsx", type: "buffer" }));
+    })
+    .catch((err) => {
+      console.log("Error downloading cheques:", err);
+      res.status(500).send("Server error");
+    });
 });
 
 
