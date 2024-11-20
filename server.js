@@ -107,6 +107,21 @@ app.post("/add-cheque", (req, res) => {
     });
 });
 
+
+$.ajax({
+  url: "/get-cheque",
+  method: "POST",  // Ensure this is POST, not GET
+  data: { startDate, endDate },
+  success: function (response) {
+    // Handle response
+  },
+  error: function () {
+    alert("Error fetching cheques.");
+  }
+});
+
+
+
 // Route to get cheques with optional signed date filter
 // Add this route to handle POST requests to /get-cheque
 app.post('/get-cheque', (req, res) => {
