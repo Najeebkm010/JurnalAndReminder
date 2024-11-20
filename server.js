@@ -138,7 +138,10 @@ app.get("/download-cheques", (req, res) => {
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
-        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+        const signedDateFormatted = moment(cheque.signedDate).format("DD/MM/YYYY");
+        const releaseDateFormatted = moment(cheque.releaseDate).format("DD/MM/YYYY");
+
+        csv += `${cheque.chequeNumber},${signedDateFormatted},${cheque.amount},${releaseDateFormatted},${cheque.remark}\n`;
       });
 
       res.header("Content-Type", "text/csv");
@@ -150,6 +153,7 @@ app.get("/download-cheques", (req, res) => {
       res.status(500).send("Server error");
     });
 });
+
 
 // Route for the home page and redirect to login page
 app.get("/", (req, res) => {
