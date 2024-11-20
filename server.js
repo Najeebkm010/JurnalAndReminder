@@ -6,9 +6,9 @@ const session = require("express-session");
 //Mail and sms
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
-const cron = require("node-cron");
 const moment = require("moment");
-
+const moment = require('moment-timezone');
+const cron = require('node-cron');
 
 
 
@@ -284,8 +284,7 @@ const sendReminderEmail = (email, chequeNumber, releaseDate, amount) => {
   });
 };
 
-const moment = require('moment-timezone');
-const cron = require('node-cron');
+
 
 // Your time zone (e.g., Dubai time zone)
 const timezone = "Asia/Dubai";
