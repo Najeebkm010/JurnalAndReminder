@@ -136,11 +136,15 @@ app.get("/download-cheques", (req, res) => {
 
   Cheque.find(query)
     .then((cheques) => {
-      let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
+      let csv = "Cheque Release Notification\n";
+      csv += `Generated on: ${moment().format("DD/MM/YYYY HH:mm:ss")}\n\n`; // Adding a timestamp of when the CSV is generated
+      csv += "Cheque No.,Signed Date,Cheque Amount (AED),Release Date,Remark\n";  // Header
+
       cheques.forEach((cheque) => {
         const signedDateFormatted = moment(cheque.signedDate).format("DD/MM/YYYY");
         const releaseDateFormatted = moment(cheque.releaseDate).format("DD/MM/YYYY");
 
+        // Adding row data
         csv += `${cheque.chequeNumber},${signedDateFormatted},${cheque.amount},${releaseDateFormatted},${cheque.remark}\n`;
       });
 
