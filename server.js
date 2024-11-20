@@ -98,6 +98,11 @@ app.post("/add-cheque", (req, res) => {
   newCheque
     .save()
     .then(() => {
+
+      //send mail
+      sendReminderEmail(predefinedEmail, chequeNumber, releaseDate, amount);
+      sendReminderSMS(predefinedPhone, chequeNumber, releaseDate, amount);
+      
       res.redirect("/get-cheque");
     })
     .catch((err) => {
