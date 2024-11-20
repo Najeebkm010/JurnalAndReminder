@@ -284,10 +284,16 @@ const sendReminderEmail = (email, chequeNumber, releaseDate, amount) => {
   });
 };
 
-// Function to check for cheques and send notifications
-const checkForChequesToNotify = () => {
-  const twoDaysFromNow = moment().add(2, "days").startOf("day").toDate();
+const moment = require('moment-timezone');
+const cron = require('node-cron');
 
+// Your time zone (e.g., Dubai time zone)
+const timezone = "Asia/Dubai";
+
+// Function to check if it's time to send notifications
+const checkForChequesToNotify = () => {
+  const twoDaysFromNow = moment().add(2, 'days').startOf('day').toDate();
+  
   Cheque.find({ releaseDate: twoDaysFromNow })
     .then((cheques) => {
       cheques.forEach((cheque) => {
@@ -301,10 +307,17 @@ const checkForChequesToNotify = () => {
     });
 };
 
-// Schedule the job to run every day at midnight
-cron.schedule("0 0 * * *", () => {
-  console.log("Checking for cheques to notify...");
-  checkForChequesToNotify();
+// Schedule the job to run at 12:00 AM in your local time zone
+cron.schedule('0 0 * * *', () => {
+  const localTimeNow = moment().tz(timezone).format('HH:mm');
+  const targetTime = '00:00';  // 12:00 AM in local time
+  
+  if (localTimeNow === targetTime) {
+    console.log("It's 12:00 AM in local time. Checking for cheques to notify...");
+    checkForChequesToNotify();
+  }
+}, {
+  timezone: timezone  // Set the local time zone (e.g., "Asia/Dubai")
 });
 
 const notificationSchema = new mongoose.Schema({
