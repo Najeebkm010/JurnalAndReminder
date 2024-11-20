@@ -86,10 +86,10 @@ app.post("/add-cheque", (req, res) => {
   const predefinedPhone = "+971529536203";
 
   const newCheque = new Cheque({
-    signedDate,
+    signedDate: new Date(signedDate),
     chequeNumber,
     amount,
-    releaseDate,
+    releaseDate: new Date(releaseDate),
     remark,
     email: predefinedEmail,
     phoneNumber: predefinedPhone,
@@ -97,13 +97,17 @@ app.post("/add-cheque", (req, res) => {
 
   newCheque
     .save()
-    .then(() => {
-
-      //send mail
-      sendReminderEmail(predefinedEmail, chequeNumber, releaseDate, amount);
-      sendReminderSMS(predefinedPhone, chequeNumber, releaseDate, amount);
-      
-      res.redirect("/get-cheque");
+    .then((cheque) => {
+      res.json({
+        message: "Cheque added successfully",
+        cheque: {
+          chequeNumber: cheque.chequeNumber,
+          signedDate: moment(cheque.signedDate).format("DD/MM/YYYY"),
+          releaseDate: moment(cheque.releaseDate).format("DD/MM/YYYY"),
+          amount: cheque.amount,
+          remark: cheque.remark,
+        },
+      });
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
@@ -112,7 +116,7 @@ app.post("/add-cheque", (req, res) => {
 });
 
 // Route to get cheques with optional signed date filter
-app.post("/get-cheque", (req, res) => {
+aapp.post("/get-cheque", (req, res) => {
   const { startDate, endDate } = req.body;
 
   const query = {};
@@ -122,7 +126,15 @@ app.post("/get-cheque", (req, res) => {
 
   Cheque.find(query)
     .then((cheques) => {
-      res.json(cheques);
+      const formattedCheques = cheques.map((cheque) => ({
+        chequeNumber: cheque.chequeNumber,
+        signedDate: moment(cheque.signedDate).format("DD/MM/YYYY"),
+        releaseDate: moment(cheque.releaseDate).format("DD/MM/YYYY"),
+        amount: cheque.amount,
+        remark: cheque.remark,
+      }));
+
+      res.json(formattedCheques);
     })
     .catch((err) => {
       console.log("Error fetching cheques:", err);
@@ -143,7 +155,7 @@ app.get("/download-cheques", (req, res) => {
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
-        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+        csv += `${cheque.chequeNumber},${moment(cheque.signedDate).format("DD/MM/YYYY")},${cheque.amount},${moment(cheque.releaseDate).format("DD/MM/YYYY")},${cheque.remark}\n`;
       });
 
       res.header("Content-Type", "text/csv");
