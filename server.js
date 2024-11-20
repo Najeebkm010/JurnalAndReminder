@@ -11,29 +11,6 @@ const moment = require("moment");
 
 
 
-const RedisStore = require("connect-redis")(session);
-const redis = require("redis");
-
-const redisClient = redis.createClient({
-  host: "localhost", // Replace with your Redis server details
-  port: 6379,
-});
-
-app.use(
-  session({
-    store: new RedisStore({ client: redisClient }),
-    secret: "your-secret-key", // Replace with a secure secret
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Set true if using HTTPS
-      maxAge: 1000 * 60 * 60, // Session expiry in milliseconds
-    },
-  })
-);
-
-
-
 
 // Initialize the app
 const app = express();
@@ -44,17 +21,15 @@ const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.n
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
-  releaseDate: { type: Date, required: true },
   chequeNumber: { type: String, required: true },
   amount: { type: Number, required: true },
+  releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
-  email: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
+  email: { type: String, required: true },  // Predefined email
+  phoneNumber: { type: String, required: true },  // Predefined phone number
 });
 
-// Avoid model overwrite issue
-const Cheque = mongoose.models.Cheque || mongoose.model("Cheque", chequeSchema);
-
+const Cheque = mongoose.model("Cheque", chequeSchema);
 
 // Middleware for session handling
 app.use(
@@ -111,10 +86,10 @@ app.post("/add-cheque", (req, res) => {
   const predefinedPhone = "+971529536203";
 
   const newCheque = new Cheque({
-    signedDate: new Date(signedDate),
+    signedDate,
     chequeNumber,
     amount,
-    releaseDate: new Date(releaseDate),
+    releaseDate,
     remark,
     email: predefinedEmail,
     phoneNumber: predefinedPhone,
@@ -122,17 +97,8 @@ app.post("/add-cheque", (req, res) => {
 
   newCheque
     .save()
-    .then((cheque) => {
-      res.json({
-        message: "Cheque added successfully",
-        cheque: {
-          chequeNumber: cheque.chequeNumber,
-          signedDate: moment(cheque.signedDate).format("DD/MM/YYYY"),
-          releaseDate: moment(cheque.releaseDate).format("DD/MM/YYYY"),
-          amount: cheque.amount,
-          remark: cheque.remark,
-        },
-      });
+    .then(() => {
+      res.redirect("/get-cheque");
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
@@ -141,7 +107,7 @@ app.post("/add-cheque", (req, res) => {
 });
 
 // Route to get cheques with optional signed date filter
-aapp.post("/get-cheque", (req, res) => {
+app.post("/get-cheque", (req, res) => {
   const { startDate, endDate } = req.body;
 
   const query = {};
@@ -151,15 +117,7 @@ aapp.post("/get-cheque", (req, res) => {
 
   Cheque.find(query)
     .then((cheques) => {
-      const formattedCheques = cheques.map((cheque) => ({
-        chequeNumber: cheque.chequeNumber,
-        signedDate: moment(cheque.signedDate).format("DD/MM/YYYY"),
-        releaseDate: moment(cheque.releaseDate).format("DD/MM/YYYY"),
-        amount: cheque.amount,
-        remark: cheque.remark,
-      }));
-
-      res.json(formattedCheques);
+      res.json(cheques);
     })
     .catch((err) => {
       console.log("Error fetching cheques:", err);
@@ -180,7 +138,7 @@ app.get("/download-cheques", (req, res) => {
     .then((cheques) => {
       let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
       cheques.forEach((cheque) => {
-        csv += `${cheque.chequeNumber},${moment(cheque.signedDate).format("DD/MM/YYYY")},${cheque.amount},${moment(cheque.releaseDate).format("DD/MM/YYYY")},${cheque.remark}\n`;
+        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
       });
 
       res.header("Content-Type", "text/csv");
