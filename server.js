@@ -11,7 +11,6 @@ const moment = require("moment");
 
 
 
-const session = require("express-session");
 const RedisStore = require("connect-redis")(session);
 const redis = require("redis");
 
