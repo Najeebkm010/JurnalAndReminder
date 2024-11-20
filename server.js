@@ -108,23 +108,31 @@ app.post("/add-cheque", (req, res) => {
 });
 
 // Route to get cheques with optional signed date filter
-app.post("/get-cheque", (req, res) => {
-  const { startDate, endDate } = req.body;
+// Add this route to handle POST requests to /get-cheque
+app.post('/get-cheque', (req, res) => {
+  const { startDate, endDate } = req.body; // Extract startDate and endDate from the request body
 
+  // Construct the query to filter cheques based on the dates
   const query = {};
   if (startDate && endDate) {
-    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    query.signedDate = { 
+      $gte: new Date(startDate), 
+      $lte: new Date(endDate) 
+    };
   }
 
+  // Fetch the cheques from the database using the query
   Cheque.find(query)
     .then((cheques) => {
+      // Send the filtered cheques back as a response
       res.json(cheques);
     })
     .catch((err) => {
-      console.log("Error fetching cheques:", err);
+      console.error("Error fetching cheques:", err);
       res.status(500).send("Server error");
     });
 });
+
 
 // Route to download cheques as CSV
 // Route to download cheques as Excel
