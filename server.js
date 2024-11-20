@@ -11,6 +11,30 @@ const moment = require("moment");
 
 
 
+const session = require("express-session");
+const RedisStore = require("connect-redis")(session);
+const redis = require("redis");
+
+const redisClient = redis.createClient({
+  host: "localhost", // Replace with your Redis server details
+  port: 6379,
+});
+
+app.use(
+  session({
+    store: new RedisStore({ client: redisClient }),
+    secret: "your-secret-key", // Replace with a secure secret
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set true if using HTTPS
+      maxAge: 1000 * 60 * 60, // Session expiry in milliseconds
+    },
+  })
+);
+
+
+
 
 // Initialize the app
 const app = express();
@@ -19,17 +43,21 @@ const app = express();
 const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
 
 // Define a Cheque Schema
+const mongoose = require("mongoose");
+
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
+  releaseDate: { type: Date, required: true },
   chequeNumber: { type: String, required: true },
   amount: { type: Number, required: true },
-  releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
-  email: { type: String, required: true },  // Predefined email
-  phoneNumber: { type: String, required: true },  // Predefined phone number
+  email: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
 });
 
-const Cheque = mongoose.model("Cheque", chequeSchema);
+// Avoid model overwrite issue
+const Cheque = mongoose.models.Cheque || mongoose.model("Cheque", chequeSchema);
+
 
 // Middleware for session handling
 app.use(
