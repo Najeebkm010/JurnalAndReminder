@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
+const xlsx = require('xlsx');
 //Mail and sms
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
@@ -126,7 +127,8 @@ app.post("/get-cheque", (req, res) => {
 });
 
 // Route to download cheques as CSV
-app.get("/download-cheques", (req, res) => {
+// Route to download cheques as Excel
+app.get("/download-cheques-excel", (req, res) => {
   const { startDate, endDate } = req.query;
 
   const query = {};
@@ -136,21 +138,79 @@ app.get("/download-cheques", (req, res) => {
 
   Cheque.find(query)
     .then((cheques) => {
-      let csv = "Cheque Release Notification\n";
-      csv += `Generated on: ${moment().format("DD/MM/YYYY HH:mm:ss")}\n\n`; // Adding a timestamp of when the CSV is generated
-      csv += "Cheque No.,Signed Date,Cheque Amount (AED),Release Date,Remark\n";  // Header
+      const data = [];
+      
+      // Define styles for header cells
+      const headerStyle = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        alignment: { horizontal: "center", vertical: "center" },
+        fill: { fgColor: { rgb: "4F81BD" } }, // Blue background color
+        border: {
+          top: { style: "thin", color: { rgb: "000000" } },
+          left: { style: "thin", color: { rgb: "000000" } },
+          bottom: { style: "thin", color: { rgb: "000000" } },
+          right: { style: "thin", color: { rgb: "000000" } }
+        }
+      };
 
+      // Add headers
+      data.push([
+        "Cheque No.",
+        "Signed Date",
+        "Cheque Amount (AED)",
+        "Release Date",
+        "Remark"
+      ]);
+
+      // Formatting the rows and applying border styles
       cheques.forEach((cheque) => {
         const signedDateFormatted = moment(cheque.signedDate).format("DD/MM/YYYY");
         const releaseDateFormatted = moment(cheque.releaseDate).format("DD/MM/YYYY");
 
-        // Adding row data
-        csv += `${cheque.chequeNumber},${signedDateFormatted},${cheque.amount},${releaseDateFormatted},${cheque.remark}\n`;
+        data.push([
+          cheque.chequeNumber,
+          signedDateFormatted,
+          cheque.amount,
+          releaseDateFormatted,
+          cheque.remark,
+        ]);
       });
 
-      res.header("Content-Type", "text/csv");
-      res.attachment("cheques.csv");
-      res.send(csv);
+      // Create a worksheet with the data
+      const ws = xlsx.utils.aoa_to_sheet(data);
+
+      // Apply styles to the header row
+      for (let i = 0; i < 5; i++) {
+        const cellAddress = { r: 0, c: i }; // 0th row (header row), i-th column
+        if (!ws[cellAddress]) ws[cellAddress] = {}; // Initialize cell if undefined
+        ws[cellAddress].s = headerStyle;
+      }
+
+      // Apply borders to all cells
+      for (let row = 0; row < data.length; row++) {
+        for (let col = 0; col < data[row].length; col++) {
+          const cellAddress = { r: row, c: col };
+          if (!ws[cellAddress]) ws[cellAddress] = {}; // Initialize cell if undefined
+          if (!ws[cellAddress].s) ws[cellAddress].s = {}; // Initialize style if undefined
+          ws[cellAddress].s.border = {
+            top: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } }
+          };
+        }
+      }
+
+      // Create a workbook and append the worksheet
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Cheques");
+
+      // Set headers for the download response
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      res.setHeader("Content-Disposition", "attachment; filename=cheques.xlsx");
+
+      // Send the Excel file
+      res.send(xlsx.write(wb, { bookType: "xlsx", type: "buffer" }));
     })
     .catch((err) => {
       console.log("Error downloading cheques:", err);
