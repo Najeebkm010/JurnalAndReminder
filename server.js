@@ -3,38 +3,20 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
-// Mail and sms
+/*
+//Mail and sms
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
 const moment = require('moment-timezone');
 const cron = require('node-cron');
-const MongoStore = require('connect-mongo');
+*/
+
+
+// Initialize the app
 const app = express();
 
 // MongoDB connection URI
-const mongoURI = process.env.MONGO_URI;
-
-// Middleware for session handling
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  store: MongoStore.create({
-    mongoUrl: mongoURI,
-    collectionName: 'sessions'
-  }),
-  cookie: {
-    secure: process.env.NODE_ENV === 'production', // use secure cookies in production
-    maxAge: 1000 * 60 * 60 * 24 // 24 hours
-  }
-}));
-
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-// Serve static files (HTML, CSS)
-app.use(express.static(path.join(__dirname, "public")));
+const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
 
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
@@ -49,14 +31,21 @@ const chequeSchema = new mongoose.Schema({
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
 
-// MongoDB connection
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 50000,  // Increased timeout
-})
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// Middleware for session handling
+app.use(
+  session({
+    secret: "mysecret", // Secret for signing session cookies
+    resave: false, // Don't save unmodified sessions
+    saveUninitialized: true, // Save a session that is new but not modified
+  })
+);
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// Serve static files (HTML, CSS)
+app.use(express.static(path.join(__dirname, "public")));
 
 // Route for login (GET method to serve the login page)
 app.get("/login", (req, res) => {
@@ -66,13 +55,8 @@ app.get("/login", (req, res) => {
 // Route to handle login POST request
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-
-  // Use environment variables for authentication
-  const adminUsername = process.env.ADMIN_USERNAME;
-  const adminPassword = process.env.ADMIN_PASSWORD;
-
-  // Simple validation
-  if (username === adminUsername && password === adminPassword) {
+  // Simple validation (Replace with actual authentication logic)
+  if (username === "admin" && password === "password") {
     req.session.user = username; // Store user in session
     res.redirect("/cheque-management"); // Redirect after successful login
   } else {
@@ -94,16 +78,13 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
-  // Check for missing fields
   if (!signedDate || !chequeNumber || !amount || !releaseDate || !remark) {
     return res.status(400).send("Missing required fields");
   }
 
-  // Use environment variables for predefined data
-  const predefinedEmail = process.env.PREDEFINED_EMAIL;
-  const predefinedPhone = process.env.PREDEFINED_PHONE;
+  const predefinedEmail = "najeebkm010@gmail.com";
+  const predefinedPhone = "+971529536203";
 
-  // Create a new cheque document
   const newCheque = new Cheque({
     signedDate,
     chequeNumber,
@@ -114,12 +95,13 @@ app.post("/add-cheque", (req, res) => {
     phoneNumber: predefinedPhone,
   });
 
-  // Save the cheque to the database
   newCheque
     .save()
-    .then(() => res.redirect("/get-cheque"))
+    .then(() => {
+      res.redirect("/get-cheque");
+    })
     .catch((err) => {
-      console.error("Error adding cheque:", err);
+      console.log("Error adding cheque:", err);
       res.status(500).send("Server error");
     });
 });
@@ -134,7 +116,9 @@ app.post("/get-cheque", (req, res) => {
   }
 
   Cheque.find(query)
-    .then((cheques) => res.json(cheques))
+    .then((cheques) => {
+      res.json(cheques);
+    })
     .catch((err) => {
       console.log("Error fetching cheques:", err);
       res.status(500).send("Server error");
@@ -175,11 +159,11 @@ app.get("/download-cheques", (req, res) => {
           cell.s = {
             font: { bold: true, color: { rgb: "FFFFFF" } },
             fill: { fgColor: { rgb: "4F81BD" } },  // Blue background color
-            border: {
-              top: { style: "thin", color: { rgb: "000000" } },
-              left: { style: "thin", color: { rgb: "000000" } },
-              bottom: { style: "thin", color: { rgb: "000000" } },
-              right: { style: "thin", color: { rgb: "000000" } }
+            border: { 
+              top: { style: "thin", color: { rgb: "000000" } }, 
+              left: { style: "thin", color: { rgb: "000000" } }, 
+              bottom: { style: "thin", color: { rgb: "000000" } }, 
+              right: { style: "thin", color: { rgb: "000000" } } 
             }
           };
         }
@@ -192,11 +176,11 @@ app.get("/download-cheques", (req, res) => {
           if (cell) {
             // Add borders for all cells
             cell.s = cell.s || {};
-            cell.s.border = {
-              top: { style: "thin", color: { rgb: "000000" } },
-              left: { style: "thin", color: { rgb: "000000" } },
-              bottom: { style: "thin", color: { rgb: "000000" } },
-              right: { style: "thin", color: { rgb: "000000" } }
+            cell.s.border = { 
+              top: { style: "thin", color: { rgb: "000000" } }, 
+              left: { style: "thin", color: { rgb: "000000" } }, 
+              bottom: { style: "thin", color: { rgb: "000000" } }, 
+              right: { style: "thin", color: { rgb: "000000" } } 
             };
           }
         }
@@ -221,6 +205,8 @@ app.get("/download-cheques", (req, res) => {
     });
 });
 
+
+
 // Route for the home page and redirect to login page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "welcome.html"));
@@ -229,6 +215,7 @@ app.get("/", (req, res) => {
 // Route to add cheque page
 app.get("/add-cheque", (req, res) => {
   if (req.session.user) {
+    // Check if user is logged in
     res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
@@ -238,23 +225,123 @@ app.get("/add-cheque", (req, res) => {
 // Route to view cheques page
 app.get("/get-cheque", (req, res) => {
   if (req.session.user) {
+    // Check if user is logged in
     res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
   }
 });
 
-// Route to handle logout
+//Rout to logout page
 app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).send("Failed to log out");
     }
-    res.redirect("/login"); // Redirect to login page after logout
+    res.redirect("/login");
   });
 });
 
-// Server listening
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server running on port 3000");
+/*
+// Setup Twilio client SMS
+const client = twilio("AC68aceabef206fe8969136b5b7fce9c55", "5c396662082f78d9b5d5ef7d739d99d1");
+
+const sendReminderSMS = (phoneNumber, chequeNumber, releaseDate, amount) => {
+  client.messages
+    .create({
+      body: `Reminder: Your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
+      from: "+12563644560",  // Replace with your Twilio phone number
+      to: phoneNumber,
+    })
+    .then((message) => console.log("SMS sent: " + message.sid))
+    .catch((error) => console.log("Error sending SMS:", error));
+};
+
+// Setup email transporter using SendGrid
+const transporter = nodemailer.createTransport({
+  service: "SendGrid",
+  auth: {
+    user: "apikey",  // Use 'apikey' as the username for SendGrid
+    pass: "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",  // Replace with your SendGrid API key
+  },
+});
+
+// Function to send email
+const sendReminderEmail = (email, chequeNumber, releaseDate, amount) => {
+  const mailOptions = {
+    from: "y0utubef0ry0u2@gmail.com",
+    to: email,
+    subject: `Reminder: Cheque Release Date Approaching`,
+    text: `This is a reminder that your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log("Error sending email:", error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+};
+
+
+
+// Your time zone (e.g., Dubai time zone)
+const timezone = "Asia/Dubai";
+
+// Function to check if it's time to send notifications
+const checkForChequesToNotify = () => {
+  const twoDaysFromNow = moment().add(2, 'days').startOf('day').toDate();
+  
+  Cheque.find({ releaseDate: twoDaysFromNow })
+    .then((cheques) => {
+      cheques.forEach((cheque) => {
+        // Send email and SMS reminder for each cheque
+        sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+        sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+      });
+    })
+    .catch((err) => {
+      console.log("Error fetching cheques:", err);
+    });
+};
+
+// Schedule the job to run at 12:00 AM in your local time zone
+cron.schedule('0 0 * * *', () => {
+  const localTimeNow = moment().tz(timezone).format('HH:mm');
+  const targetTime = '00:00';  // 12:00 AM in local time
+  
+  if (localTimeNow === targetTime) {
+    console.log("It's 12:00 AM in local time. Checking for cheques to notify...");
+    checkForChequesToNotify();
+  }
+}, {
+  timezone: timezone  // Set the local time zone (e.g., "Asia/Dubai")
+});
+
+const notificationSchema = new mongoose.Schema({
+  email: { type: String, required: true },
+  phoneNumber: { type: String, required: true },
+  chequeNumber: { type: String, required: true },
+  amount: { type: Number, required: true },
+  releaseDate: { type: Date, required: true },
+  isNotified: { type: Boolean, default: false }, // To track if notification was sent
+});
+*/
+
+const Notification = mongoose.model("Notification", notificationSchema);
+
+mongoose
+  .connect(mongoURI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 50000,  // Increased timeout
+  })
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+// Server setup
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
