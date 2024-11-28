@@ -38,7 +38,7 @@ app.use(session({
 
 
 // Initialize the app
-const app = express();
+
 
 // MongoDB connection URI
 const mongoURI = process.env.MONGO_URI;
