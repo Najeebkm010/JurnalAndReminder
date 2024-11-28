@@ -3,17 +3,16 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
-//Mail and sms
+// Mail and sms
 const nodemailer = require("nodemailer");
 const twilio = require("twilio");
 const moment = require('moment-timezone');
 const cron = require('node-cron');
-
-
-
-
 const MongoStore = require('connect-mongo');
 const app = express();
+
+// MongoDB connection URI
+const mongoURI = process.env.MONGO_URI;
 
 // Middleware for session handling
 app.use(session({
@@ -21,7 +20,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
+    mongoUrl: mongoURI,
     collectionName: 'sessions'
   }),
   cookie: {
@@ -30,28 +29,12 @@ app.use(session({
   }
 }));
 
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-
-
-
-
-
-
-// Initialize the app
-
-
-// MongoDB connection URI
-const mongoURI = process.env.MONGO_URI;
-
-
-/*
-mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('Connection error:', err));
-*/
-module.exports = app; 
-
-
+// Serve static files (HTML, CSS)
+app.use(express.static(path.join(__dirname, "public")));
 
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
@@ -66,21 +49,14 @@ const chequeSchema = new mongoose.Schema({
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
 
-// Middleware for session handling
-app.use(
-  session({
-    secret: "mysecret", // Secret for signing session cookies
-    resave: false, // Don't save unmodified sessions
-    saveUninitialized: true, // Save a session that is new but not modified
-  })
-);
-
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-// Serve static files (HTML, CSS)
-app.use(express.static(path.join(__dirname, "public")));
+// MongoDB connection
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 50000,  // Increased timeout
+})
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Route for login (GET method to serve the login page)
 app.get("/login", (req, res) => {
@@ -141,16 +117,12 @@ app.post("/add-cheque", (req, res) => {
   // Save the cheque to the database
   newCheque
     .save()
-    .then((cheque) => {
-      res.redirect("/get-cheque");
-    })
+    .then(() => res.redirect("/get-cheque"))
     .catch((err) => {
       console.error("Error adding cheque:", err);
       res.status(500).send("Server error");
     });
 });
-
-
 
 // Route to get cheques with optional signed date filter
 app.post("/get-cheque", (req, res) => {
@@ -162,9 +134,7 @@ app.post("/get-cheque", (req, res) => {
   }
 
   Cheque.find(query)
-    .then((cheques) => {
-      res.json(cheques);
-    })
+    .then((cheques) => res.json(cheques))
     .catch((err) => {
       console.log("Error fetching cheques:", err);
       res.status(500).send("Server error");
@@ -205,11 +175,11 @@ app.get("/download-cheques", (req, res) => {
           cell.s = {
             font: { bold: true, color: { rgb: "FFFFFF" } },
             fill: { fgColor: { rgb: "4F81BD" } },  // Blue background color
-            border: { 
-              top: { style: "thin", color: { rgb: "000000" } }, 
-              left: { style: "thin", color: { rgb: "000000" } }, 
-              bottom: { style: "thin", color: { rgb: "000000" } }, 
-              right: { style: "thin", color: { rgb: "000000" } } 
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
             }
           };
         }
@@ -222,11 +192,11 @@ app.get("/download-cheques", (req, res) => {
           if (cell) {
             // Add borders for all cells
             cell.s = cell.s || {};
-            cell.s.border = { 
-              top: { style: "thin", color: { rgb: "000000" } }, 
-              left: { style: "thin", color: { rgb: "000000" } }, 
-              bottom: { style: "thin", color: { rgb: "000000" } }, 
-              right: { style: "thin", color: { rgb: "000000" } } 
+            cell.s.border = {
+              top: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } }
             };
           }
         }
@@ -251,8 +221,6 @@ app.get("/download-cheques", (req, res) => {
     });
 });
 
-
-
 // Route for the home page and redirect to login page
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "welcome.html"));
@@ -261,7 +229,6 @@ app.get("/", (req, res) => {
 // Route to add cheque page
 app.get("/add-cheque", (req, res) => {
   if (req.session.user) {
-    // Check if user is logged in
     res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
@@ -271,113 +238,23 @@ app.get("/add-cheque", (req, res) => {
 // Route to view cheques page
 app.get("/get-cheque", (req, res) => {
   if (req.session.user) {
-    // Check if user is logged in
     res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
   } else {
     res.redirect("/login"); // If not logged in, redirect to login page
   }
 });
 
-//Rout to logout page
+// Route to handle logout
 app.get("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       return res.status(500).send("Failed to log out");
     }
-    res.redirect("/login");
+    res.redirect("/login"); // Redirect to login page after logout
   });
 });
 
-
-
-
-//Mailing test-------note testing
-
-// Create a nodemailer transporter (configure with your email service)
-const transporter = nodemailer.createTransport({
-  service: 'gmail', // or your email service
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
-
-// Function to send cheque reminder email
-async function sendChequeReminderEmail(cheque) {
-  try {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: cheque.email,
-      subject: 'Upcoming Cheque Release Reminder',
-      html: `
-        <h2>Cheque Release Reminder</h2>
-        <p>This is a reminder about an upcoming cheque release:</p>
-        <ul>
-          <li><strong>Cheque Number:</strong> ${cheque.chequeNumber}</li>
-          <li><strong>Amount:</strong> $${cheque.amount.toFixed(2)}</li>
-          <li><strong>Release Date:</strong> ${moment(cheque.releaseDate).format('DD/MM/YYYY')}</li>
-        </ul>
-        <p>Please prepare for the cheque release.</p>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`Reminder email sent for cheque ${cheque.chequeNumber}`);
-  } catch (error) {
-    console.error('Error sending reminder email:', error);
-  }
-}
-
-// Function to check and send reminders
-async function checkAndSendChequeReminders() {
-  try {
-    // Find cheques with release dates 2 days from now
-    const twoDaysFromNow = moment().add(2, 'days').startOf('day');
-    const remindCheques = await Cheque.find({
-      releaseDate: {
-        $gte: twoDaysFromNow,
-        $lt: moment(twoDaysFromNow).add(1, 'day')
-      }
-    });
-
-    // Send reminders for each cheque
-    for (const cheque of remindCheques) {
-      await sendChequeReminderEmail(cheque);
-    }
-  } catch (error) {
-    console.error('Error checking cheque reminders:', error);
-  }
-}
-
-// Schedule the reminder check to run daily
-cron.schedule('0 9 * * *', () => {
-  console.log('Running daily cheque reminder check');
-  checkAndSendChequeReminders();
-});
-
-// Add this to your existing app setup
-module.exports = {
-  checkAndSendChequeReminders
-};
-
-
-
-
-
-
-
-
-mongoose
-  .connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 50000,  // Increased timeout
-  })
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
-
-// Server setup
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Server listening
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Server running on port 3000");
 });
