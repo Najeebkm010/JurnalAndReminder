@@ -110,8 +110,6 @@ app.post("/add-cheque", (req, res) => {
   newCheque
     .save()
     .then((cheque) => {
-      // Schedule notifications
-      scheduleNotifications(cheque);
       res.redirect("/get-cheque");
     })
     .catch((err) => {
@@ -259,121 +257,7 @@ app.get("/logout", (req, res) => {
 });
 
 
-const scheduleNotifications = (cheque) => {
-  const moment = require("moment");
-  const cron = require("node-cron");
-  
-  const releaseDate = moment(cheque.releaseDate);
-  const twoDaysBefore = releaseDate.clone().subtract(2, "days");
 
-  // Schedule notification for two days before the release date
-  cron.schedule(twoDaysBefore.format("m H D M *"), () => {
-    console.log(`Sending notification for cheque ${cheque.chequeNumber} two days before release date.`);
-    sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-    sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-  });
-
-  // Schedule notification for the release date
-  cron.schedule(releaseDate.format("m H D M *"), () => {
-    console.log(`Sending notification for cheque ${cheque.chequeNumber} on the release date.`);
-    sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-    sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-  });
-
-  console.log("Notifications scheduled for cheque:", cheque.chequeNumber);
-};
-
-
-
-
-
-
-// Setup Twilio client SMS
-const client = twilio("AC68aceabef206fe8969136b5b7fce9c55", "5c396662082f78d9b5d5ef7d739d99d1");
-
-const sendReminderSMS = (phoneNumber, chequeNumber, releaseDate, amount) => {
-  client.messages
-    .create({
-      body: `Reminder: Your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
-      from: "+12563644560",  // Replace with your Twilio phone number
-      to: phoneNumber,
-    })
-    .then((message) => console.log("SMS sent: " + message.sid))
-    .catch((error) => console.log("Error sending SMS:", error));
-};
-
-// Setup email transporter using SendGrid
-const transporter = nodemailer.createTransport({
-  service: "SendGrid",
-  auth: {
-    user: "apikey",  // Use 'apikey' as the username for SendGrid
-    pass: "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",  // Replace with your SendGrid API key
-  },
-});
-
-// Function to send email
-const sendReminderEmail = (email, chequeNumber, releaseDate, amount) => {
-  const mailOptions = {
-    from: "y0utubef0ry0u2@gmail.com",
-    to: email,
-    subject: `Reminder: Cheque Release Date Approaching`,
-    text: `This is a reminder that your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.log("Error sending email:", error);
-    } else {
-      console.log("Email sent: " + info.response);
-    }
-  });
-};
-
-
-
-// Your time zone (e.g., Dubai time zone)
-const timezone = "Asia/Dubai";
-
-// Function to check if it's time to send notifications
-const checkForChequesToNotify = () => {
-  const twoDaysFromNow = moment().add(2, 'days').startOf('day').toDate();
-  
-  Cheque.find({ releaseDate: twoDaysFromNow })
-    .then((cheques) => {
-      cheques.forEach((cheque) => {
-        // Send email and SMS reminder for each cheque
-        sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-        sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-      });
-    })
-    .catch((err) => {
-      console.log("Error fetching cheques:", err);
-    });
-};
-
-// Schedule the job to run at 12:00 AM in your local time zone
-cron.schedule('0 0 * * *', () => {
-  const localTimeNow = moment().tz(timezone).format('HH:mm');
-  const targetTime = '00:00';  // 12:00 AM in local time
-  
-  if (localTimeNow === targetTime) {
-    console.log("It's 12:00 AM in local time. Checking for cheques to notify...");
-    checkForChequesToNotify();
-  }
-}, {
-  timezone: timezone  // Set the local time zone (e.g., "Asia/Dubai")
-});
-
-const notificationSchema = new mongoose.Schema({
-  email: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
-  chequeNumber: { type: String, required: true },
-  amount: { type: Number, required: true },
-  releaseDate: { type: Date, required: true },
-  isNotified: { type: Boolean, default: false }, // To track if notification was sent
-});
-
-const Notification = mongoose.model("Notification", notificationSchema);
 
 mongoose
   .connect(mongoURI, {
