@@ -3,13 +3,9 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
-/*
-//Mail and sms
-const nodemailer = require("nodemailer");
-const twilio = require("twilio");
-const moment = require('moment-timezone');
+
+
 const cron = require('node-cron');
-*/
 
 
 // Initialize the app
@@ -18,6 +14,7 @@ const app = express();
 // MongoDB connection URI
 const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
 
+
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
@@ -25,8 +22,6 @@ const chequeSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
   remark: { type: String, required: true },
-  email: { type: String, required: true },  // Predefined email
-  phoneNumber: { type: String, required: true },  // Predefined phone number
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
@@ -37,7 +32,7 @@ app.use(
     secret: "mysecret", // Secret for signing session cookies
     resave: false, // Don't save unmodified sessions
     saveUninitialized: true, // Save a session that is new but not modified
-  })
+  }),
 );
 
 // Middleware
@@ -78,27 +73,18 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
-  if (!signedDate || !chequeNumber || !amount || !releaseDate || !remark) {
-    return res.status(400).send("Missing required fields");
-  }
-
-  const predefinedEmail = "najeebkm010@gmail.com";
-  const predefinedPhone = "+971529536203";
-
   const newCheque = new Cheque({
     signedDate,
     chequeNumber,
     amount,
     releaseDate,
     remark,
-    email: predefinedEmail,
-    phoneNumber: predefinedPhone,
   });
 
   newCheque
     .save()
     .then(() => {
-      res.redirect("/get-cheque");
+      res.redirect("/get-cheque"); // After saving, redirect to /get-cheque to view cheques
     })
     .catch((err) => {
       console.log("Error adding cheque:", err);
@@ -106,15 +92,40 @@ app.post("/add-cheque", (req, res) => {
     });
 });
 
+
+
+// Function to send an email to multiple recipients (notification about the added cheque)
+const sendEmail = (emails, chequeDetails) => {
+  const mailOptions = {
+    from: "y0utubef0ry0u2@gmail.com", // Replace with your email
+    to: emails.join(", "), // Join the emails array to send to multiple recipients
+    subject: "New Cheque Added",
+    text: `Dear User,\n\nA new cheque with the following details has been added:\n\nCheque Number: ${chequeDetails.chequeNumber}\nSigned Date: ${chequeDetails.signedDate}\nAmount: ${chequeDetails.amount}\nRelease Date: ${chequeDetails.releaseDate}\nRemark: ${chequeDetails.remark}\n\nBest Regards,\nYour App`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log("Error sending email:", error);  // Error logging
+    } else {
+      console.log("Email sent:", info.response);  // Success logging
+    }
+  });
+};
+
+
+// Route to get cheques with optional date filter
 // Route to get cheques with optional signed date filter
+// Route to get cheques with filtering based on signed date
 app.post("/get-cheque", (req, res) => {
   const { startDate, endDate } = req.body;
 
+  // Create a query object based on signed date
   const query = {};
   if (startDate && endDate) {
     query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
   }
 
+  // Query the database for cheques within the filtered date range
   Cheque.find(query)
     .then((cheques) => {
       res.json(cheques);
@@ -126,86 +137,23 @@ app.post("/get-cheque", (req, res) => {
 });
 
 // Route to download cheques as CSV
-const XLSX = require("xlsx");
-
 app.get("/download-cheques", (req, res) => {
-  const { startDate, endDate } = req.query;
-
-  const query = {};
-  if (startDate && endDate) {
-    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
-  }
-
-  Cheque.find(query)
+  Cheque.find()
     .then((cheques) => {
-      // Prepare the data
-      const data = cheques.map((cheque) => ({
-        "Cheque Number": cheque.chequeNumber,
-        "Signed Date": moment(cheque.signedDate).format("DD/MM/YYYY"),
-        "Amount": cheque.amount,
-        "Release Date": moment(cheque.releaseDate).format("DD/MM/YYYY"),
-        "Remark": cheque.remark,
-      }));
+      let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
+      cheques.forEach((cheque) => {
+        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+      });
 
-      // Create the worksheet
-      const ws = XLSX.utils.json_to_sheet(data);
-
-      // Apply styling: make header bold, blue, and add borders
-      const range = XLSX.utils.decode_range(ws['!ref']); // Get the range of the worksheet
-      for (let col = range.s.c; col <= range.e.c; col++) {
-        const cell = ws[XLSX.utils.encode_cell({ r: 0, c: col })];
-        if (cell) {
-          // Set bold font and blue color for headers
-          cell.s = {
-            font: { bold: true, color: { rgb: "FFFFFF" } },
-            fill: { fgColor: { rgb: "4F81BD" } },  // Blue background color
-            border: { 
-              top: { style: "thin", color: { rgb: "000000" } }, 
-              left: { style: "thin", color: { rgb: "000000" } }, 
-              bottom: { style: "thin", color: { rgb: "000000" } }, 
-              right: { style: "thin", color: { rgb: "000000" } } 
-            }
-          };
-        }
-      }
-
-      // Apply borders to the rest of the cells
-      for (let row = range.s.r + 1; row <= range.e.r; row++) {
-        for (let col = range.s.c; col <= range.e.c; col++) {
-          const cell = ws[XLSX.utils.encode_cell({ r: row, c: col })];
-          if (cell) {
-            // Add borders for all cells
-            cell.s = cell.s || {};
-            cell.s.border = { 
-              top: { style: "thin", color: { rgb: "000000" } }, 
-              left: { style: "thin", color: { rgb: "000000" } }, 
-              bottom: { style: "thin", color: { rgb: "000000" } }, 
-              right: { style: "thin", color: { rgb: "000000" } } 
-            };
-          }
-        }
-      }
-
-      // Create a new workbook and append the sheet
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Cheques");
-
-      // Write to buffer and send as download
-      const fileBuffer = XLSX.write(wb, { bookType: "xlsx", type: "buffer" });
-
-      // Set the headers for file download
-      res.header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      res.header("Content-Disposition", "attachment; filename=cheques.xlsx");
-
-      res.send(fileBuffer);
+      res.header("Content-Type", "text/csv");
+      res.attachment("cheques.csv");
+      res.send(csv);
     })
     .catch((err) => {
       console.log("Error downloading cheques:", err);
       res.status(500).send("Server error");
     });
 });
-
-
 
 // Route for the home page and redirect to login page
 app.get("/", (req, res) => {
@@ -232,104 +180,50 @@ app.get("/get-cheque", (req, res) => {
   }
 });
 
-//Rout to logout page
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).send("Failed to log out");
-    }
-    res.redirect("/login");
-  });
-});
-
-
-// Setup Twilio client SMS
-const client = twilio("AC68aceabef206fe8969136b5b7fce9c55", "5c396662082f78d9b5d5ef7d739d99d1");
-
-const sendReminderSMS = (phoneNumber, chequeNumber, releaseDate, amount) => {
-  client.messages
-    .create({
-      body: `Reminder: Your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
-      from: "+12563644560",  // Replace with your Twilio phone number
-      to: phoneNumber,
-    })
-    .then((message) => console.log("SMS sent: " + message.sid))
-    .catch((error) => console.log("Error sending SMS:", error));
-};
-
-// Setup email transporter using SendGrid
-const transporter = nodemailer.createTransport({
-  service: "SendGrid",
-  auth: {
-    user: "apikey",  // Use 'apikey' as the username for SendGrid
-    pass: "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",  // Replace with your SendGrid API key
-  },
-});
-
-// Function to send email
-const sendReminderEmail = (email, chequeNumber, releaseDate, amount) => {
+// Function to send an email to multiple recipients
+const sendEmailReminder = (emails, chequeDetails) => {
   const mailOptions = {
-    from: "y0utubef0ry0u2@gmail.com",
-    to: email,
-    subject: `Reminder: Cheque Release Date Approaching`,
-    text: `This is a reminder that your cheque ${chequeNumber} for the amount of ${amount} will be released on ${releaseDate}.`,
+    from: "y0utubef0ry0y2@gmail.com", // Replace with your email
+    to: emails.join(", "), // Join the emails array to send to multiple recipients
+    subject: "Cheque Release Reminder",
+    text: `Dear User, this is a reminder that the cheque with number ${chequeDetails.chequeNumber} and amount ${chequeDetails.amount} is scheduled to be released on ${chequeDetails.releaseDate}.`,
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
     if (error) {
       console.log("Error sending email:", error);
     } else {
-      console.log("Email sent: " + info.response);
+      console.log("Email sent:", info.response);
     }
   });
 };
 
+// Modify the scheduled task to send email to two recipients
+cron.schedule("0 9 * * *", () => {
+  console.log("Running scheduled task to check for cheque reminders");
 
+  const today = new Date();
+  today.setDate(today.getDate() + 2); // Get the date two days from now
 
-// Your time zone (e.g., Dubai time zone)
-const timezone = "Asia/Dubai";
-
-// Function to check if it's time to send notifications
-const checkForChequesToNotify = () => {
-  const twoDaysFromNow = moment().add(2, 'days').startOf('day').toDate();
-  
-  Cheque.find({ releaseDate: twoDaysFromNow })
+  Cheque.find({ releaseDate: today })
     .then((cheques) => {
       cheques.forEach((cheque) => {
-        // Send email and SMS reminder for each cheque
-        sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
-        sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+        // Send email to two different addresses
+        const emails = ["noufalriyas88@gmail.com", "hooralbhar.foodstufftrading@gmail.com"];
+        sendEmailReminder(emails, cheque);
       });
     })
     .catch((err) => {
-      console.log("Error fetching cheques:", err);
+      console.log("Error fetching cheques for reminders:", err);
     });
-};
-
-// Schedule the job to run at 12:00 AM in your local time zone
-cron.schedule('0 0 * * *', () => {
-  const localTimeNow = moment().tz(timezone).format('HH:mm');
-  const targetTime = '00:00';  // 12:00 AM in local time
-  
-  if (localTimeNow === targetTime) {
-    console.log("It's 12:00 AM in local time. Checking for cheques to notify...");
-    checkForChequesToNotify();
-  }
-}, {
-  timezone: timezone  // Set the local time zone (e.g., "Asia/Dubai")
-});
-
-const notificationSchema = new mongoose.Schema({
-  email: { type: String, required: true },
-  phoneNumber: { type: String, required: true },
-  chequeNumber: { type: String, required: true },
-  amount: { type: Number, required: true },
-  releaseDate: { type: Date, required: true },
-  isNotified: { type: Boolean, default: false }, // To track if notification was sent
 });
 
 
-const Notification = mongoose.model("Notification", notificationSchema);
+
+cron.schedule("0 9 * * *", () => {
+  console.log("Cron job running at 9:00 AM every day.");
+  // Place your scheduled task logic here (e.g., sending reminders)
+});
 
 mongoose
   .connect(mongoURI, {
