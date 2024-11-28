@@ -109,7 +109,9 @@ app.post("/add-cheque", (req, res) => {
   // Save the cheque to the database
   newCheque
     .save()
-    .then(() => {
+    .then((cheque) => {
+      // Schedule notifications
+      scheduleNotifications(cheque);
       res.redirect("/get-cheque");
     })
     .catch((err) => {
@@ -117,6 +119,7 @@ app.post("/add-cheque", (req, res) => {
       res.status(500).send("Server error");
     });
 });
+
 
 
 // Route to get cheques with optional signed date filter
@@ -254,6 +257,35 @@ app.get("/logout", (req, res) => {
     res.redirect("/login");
   });
 });
+
+
+const scheduleNotifications = (cheque) => {
+  const moment = require("moment");
+  const cron = require("node-cron");
+  
+  const releaseDate = moment(cheque.releaseDate);
+  const twoDaysBefore = releaseDate.clone().subtract(2, "days");
+
+  // Schedule notification for two days before the release date
+  cron.schedule(twoDaysBefore.format("m H D M *"), () => {
+    console.log(`Sending notification for cheque ${cheque.chequeNumber} two days before release date.`);
+    sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+    sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+  });
+
+  // Schedule notification for the release date
+  cron.schedule(releaseDate.format("m H D M *"), () => {
+    console.log(`Sending notification for cheque ${cheque.chequeNumber} on the release date.`);
+    sendReminderEmail(cheque.email, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+    sendReminderSMS(cheque.phoneNumber, cheque.chequeNumber, cheque.releaseDate, cheque.amount);
+  });
+
+  console.log("Notifications scheduled for cheque:", cheque.chequeNumber);
+};
+
+
+
+
 
 
 // Setup Twilio client SMS
