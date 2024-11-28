@@ -15,7 +15,11 @@ const cron = require('node-cron');
 const app = express();
 
 // MongoDB connection URI
-const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
+const mongoURI = process.env.MONGO_URI;
+
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('Connection error:', err));
 
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
