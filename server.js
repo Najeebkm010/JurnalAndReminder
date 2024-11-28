@@ -13,7 +13,9 @@ const cron = require('node-cron');
 
 
 const MongoStore = require('connect-mongo');
+const app = express();
 
+// Middleware for session handling
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -27,7 +29,6 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24 // 24 hours
   }
 }));
-
 
 
 
