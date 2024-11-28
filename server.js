@@ -242,7 +242,7 @@ app.get("/logout", (req, res) => {
   });
 });
 
-/*
+
 // Setup Twilio client SMS
 const client = twilio("AC68aceabef206fe8969136b5b7fce9c55", "5c396662082f78d9b5d5ef7d739d99d1");
 
@@ -327,7 +327,7 @@ const notificationSchema = new mongoose.Schema({
   releaseDate: { type: Date, required: true },
   isNotified: { type: Boolean, default: false }, // To track if notification was sent
 });
-*/
+
 
 const Notification = mongoose.model("Notification", notificationSchema);
 
