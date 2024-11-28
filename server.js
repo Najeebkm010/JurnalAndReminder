@@ -259,6 +259,85 @@ app.get("/logout", (req, res) => {
 
 
 
+//Mailing test-------note testing
+
+const nodemailer = require('nodemailer');
+const moment = require('moment-timezone');
+
+// Create a nodemailer transporter (configure with your email service)
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // or your email service
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+// Function to send cheque reminder email
+async function sendChequeReminderEmail(cheque) {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: cheque.email,
+      subject: 'Upcoming Cheque Release Reminder',
+      html: `
+        <h2>Cheque Release Reminder</h2>
+        <p>This is a reminder about an upcoming cheque release:</p>
+        <ul>
+          <li><strong>Cheque Number:</strong> ${cheque.chequeNumber}</li>
+          <li><strong>Amount:</strong> $${cheque.amount.toFixed(2)}</li>
+          <li><strong>Release Date:</strong> ${moment(cheque.releaseDate).format('DD/MM/YYYY')}</li>
+        </ul>
+        <p>Please prepare for the cheque release.</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`Reminder email sent for cheque ${cheque.chequeNumber}`);
+  } catch (error) {
+    console.error('Error sending reminder email:', error);
+  }
+}
+
+// Function to check and send reminders
+async function checkAndSendChequeReminders() {
+  try {
+    // Find cheques with release dates 2 days from now
+    const twoDaysFromNow = moment().add(2, 'days').startOf('day');
+    const remindCheques = await Cheque.find({
+      releaseDate: {
+        $gte: twoDaysFromNow,
+        $lt: moment(twoDaysFromNow).add(1, 'day')
+      }
+    });
+
+    // Send reminders for each cheque
+    for (const cheque of remindCheques) {
+      await sendChequeReminderEmail(cheque);
+    }
+  } catch (error) {
+    console.error('Error checking cheque reminders:', error);
+  }
+}
+
+// Schedule the reminder check to run daily
+cron.schedule('0 9 * * *', () => {
+  console.log('Running daily cheque reminder check');
+  checkAndSendChequeReminders();
+});
+
+// Add this to your existing app setup
+module.exports = {
+  checkAndSendChequeReminders
+};
+
+
+
+
+
+
+
+
 mongoose
   .connect(mongoURI, {
     useNewUrlParser: true,
