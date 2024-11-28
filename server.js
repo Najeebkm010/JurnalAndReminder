@@ -261,9 +261,6 @@ app.get("/logout", (req, res) => {
 
 //Mailing test-------note testing
 
-const nodemailer = require('nodemailer');
-const moment = require('moment-timezone');
-
 // Create a nodemailer transporter (configure with your email service)
 const transporter = nodemailer.createTransport({
   service: 'gmail', // or your email service
