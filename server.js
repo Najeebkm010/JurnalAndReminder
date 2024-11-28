@@ -86,13 +86,16 @@ app.get("/cheque-management", (req, res) => {
 app.post("/add-cheque", (req, res) => {
   const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
 
+  // Check for missing fields
   if (!signedDate || !chequeNumber || !amount || !releaseDate || !remark) {
     return res.status(400).send("Missing required fields");
   }
 
-  const predefinedEmail = "najeebkm010@gmail.com";
-  const predefinedPhone = "+971529536203";
+  // Use environment variables for predefined data
+  const predefinedEmail = process.env.PREDEFINED_EMAIL;
+  const predefinedPhone = process.env.PREDEFINED_PHONE;
 
+  // Create a new cheque document
   const newCheque = new Cheque({
     signedDate,
     chequeNumber,
@@ -103,16 +106,18 @@ app.post("/add-cheque", (req, res) => {
     phoneNumber: predefinedPhone,
   });
 
+  // Save the cheque to the database
   newCheque
     .save()
     .then(() => {
       res.redirect("/get-cheque");
     })
     .catch((err) => {
-      console.log("Error adding cheque:", err);
+      console.error("Error adding cheque:", err);
       res.status(500).send("Server error");
     });
 });
+
 
 // Route to get cheques with optional signed date filter
 app.post("/get-cheque", (req, res) => {
