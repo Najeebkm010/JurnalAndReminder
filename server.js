@@ -58,8 +58,13 @@ app.get("/login", (req, res) => {
 // Route to handle login POST request
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  // Simple validation (Replace with actual authentication logic)
-  if (username === "admin" && password === "password") {
+
+  // Use environment variables for authentication
+  const adminUsername = process.env.ADMIN_USERNAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  // Simple validation
+  if (username === adminUsername && password === adminPassword) {
     req.session.user = username; // Store user in session
     res.redirect("/cheque-management"); // Redirect after successful login
   } else {
