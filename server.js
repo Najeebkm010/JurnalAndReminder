@@ -11,15 +11,46 @@ const cron = require('node-cron');
 
 
 
+
+const MongoStore = require('connect-mongo');
+
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGO_URI,
+    collectionName: 'sessions'
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // use secure cookies in production
+    maxAge: 1000 * 60 * 60 * 24 // 24 hours
+  }
+}));
+
+
+
+
+
+
+
+
+
 // Initialize the app
 const app = express();
 
 // MongoDB connection URI
 const mongoURI = process.env.MONGO_URI;
 
+
+/*
 mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('Connection error:', err));
+*/
+module.exports = app; 
+
+
 
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
