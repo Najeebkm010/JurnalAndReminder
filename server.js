@@ -5,6 +5,7 @@ const path = require("path");
 const session = require("express-session");
 require('dotenv').config();
 const { initializeEmailScheduler } = require('./emailScheduler');
+
 // Initialize the app
 const app = express();
 
@@ -155,7 +156,7 @@ mongoose
   })
   .then(() => {
     console.log("Connected to MongoDB");
-    // Initialize email scheduler if you're adding it
+    // Initialize email scheduler
     initializeEmailScheduler(); 
   })
   .catch((err) => console.error("MongoDB connection error:", err));
@@ -165,4 +166,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
