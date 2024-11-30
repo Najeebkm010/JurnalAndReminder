@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
-
+require('dotenv').config();
 // Initialize the app
 const app = express();
 
 // MongoDB connection URI
-const mongoURI = "mongodb+srv://Najeeb010:NajeebHoor123@cluster0.matgq.mongodb.net/?retryWrites=true&w=majority";
+const mongoURI = process.env.MONGO_URI;
 
 // Define a Cheque Schema
 const chequeSchema = new mongoose.Schema({
@@ -45,9 +45,9 @@ app.get("/login", (req, res) => {
 // Route to handle login POST request
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  if (username === "admin" && password === "password") {
-    req.session.user = username;
-    res.redirect("/cheque-management");
+  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+    req.session.user = username; // Store user in session
+    res.redirect("/cheque-management"); // Redirect after successful login
   } else {
     res.status(401).send("Invalid credentials");
   }
