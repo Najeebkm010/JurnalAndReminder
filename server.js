@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const path = require("path");
 const session = require("express-session");
 require('dotenv').config();
+const { initializeEmailScheduler } = require('./emailScheduler');
 // Initialize the app
 const app = express();
 
@@ -145,22 +146,18 @@ app.get("/get-cheque", (req, res) => {
   }
 });
 
-//Mail
-const { initializeEmailScheduler } = require('./emailScheduler');
-
-// After your mongoose connection
-mongoose.connect(mongoURI, {...}).then(() => {
-  console.log("Connected to MongoDB");
-  initializeEmailScheduler(); // Add this line to start the email scheduler
-}).catch((err) => console.error("MongoDB connection error:", err));
-
+// MongoDB connection
 mongoose
   .connect(mongoURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 50000,
   })
-  .then(() => console.log("Connected to MongoDB"))
+  .then(() => {
+    console.log("Connected to MongoDB");
+    // Initialize email scheduler if you're adding it
+    initializeEmailScheduler(); 
+  })
   .catch((err) => console.error("MongoDB connection error:", err));
 
 // Server setup
@@ -168,3 +165,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
