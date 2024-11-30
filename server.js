@@ -145,6 +145,15 @@ app.get("/get-cheque", (req, res) => {
   }
 });
 
+//Mail
+const { initializeEmailScheduler } = require('./emailScheduler');
+
+// After your mongoose connection
+mongoose.connect(mongoURI, {...}).then(() => {
+  console.log("Connected to MongoDB");
+  initializeEmailScheduler(); // Add this line to start the email scheduler
+}).catch((err) => console.error("MongoDB connection error:", err));
+
 mongoose
   .connect(mongoURI, {
     useNewUrlParser: true,
