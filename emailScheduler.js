@@ -1,7 +1,6 @@
+const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
-const Cheque = require('./models/Cheque'); // Assuming you've moved the Cheque model to a separate file
-const Cheque = mongoose.model("Cheque");
 
 // Create a transporter using SMTP
 const transporter = nodemailer.createTransport({
@@ -23,7 +22,7 @@ async function sendChequeReminderEmails() {
     reminderDate.setDate(today.getDate() + 2);
 
     // Find cheques with release date matching 2 days from now
-    const cheques = await Cheque.find({
+    const cheques = await mongoose.model('Cheque').find({
       releaseDate: {
         $gte: new Date(reminderDate.setHours(0, 0, 0, 0)),
         $lt: new Date(reminderDate.setHours(23, 59, 59, 999))
