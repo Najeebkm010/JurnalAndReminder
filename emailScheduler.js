@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer');
 const cron = require('node-cron');
 const Cheque = require('./models/Cheque'); // Assuming you've moved the Cheque model to a separate file
+const Cheque = mongoose.model("Cheque");
 
 // Create a transporter using SMTP
 const transporter = nodemailer.createTransport({
