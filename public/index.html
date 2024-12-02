@@ -5,12 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cheque Management</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .split-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .split {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 24px;
+    }
+
+    .split-left {
+      background-color: #6a5acd;
+    }
+
+    .split-right {
+      background-color: #007bff;
+    }
+
+    .split a {
+      display: block;
+      width: 150px;
+      text-align: center;
+      padding: 15px 20px;
+      background-color: rgba(255, 255, 255, 0.8);
+      color: black;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .split a:hover {
+      background-color: rgba(255, 255, 255, 1);
+    }
+  </style>
 </head>
 <body>
-  <div class="welcome-container">
-    <h1>Welcome to the Cheque Management System</h1>
-    <p>Please login to continue:</p>
-    <a href="/login" class="btn">Login</a>
+  <div class="split-container">
+    <div class="split split-left">
+      <a href="/journal">Journal</a>
+    </div>
+    <div class="split split-right">
+      <a href="/login">Login</a>
+    </div>
   </div>
 </body>
 </html>
