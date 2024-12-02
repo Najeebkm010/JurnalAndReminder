@@ -147,6 +147,17 @@ app.get("/get-cheque", (req, res) => {
   }
 });
 
+// Route to handle logout
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error destroying session:", err);
+      return res.status(500).send("Server error");
+    }
+    res.redirect("/login"); // Redirect to the login page after logout
+  });
+});
+
 // MongoDB connection
 mongoose
   .connect(mongoURI, {
