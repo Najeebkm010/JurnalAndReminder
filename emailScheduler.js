@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const nodemailer = require('nodemailer');
-const cron = require('node-cron');
 
 // Create a transporter using SMTP
 const transporter = nodemailer.createTransport({
@@ -20,7 +19,7 @@ async function sendChequeReminderEmails() {
     // Calculate the date 2 days from now
     const reminderDate = new Date(today);
     reminderDate.setDate(today.getDate() + 2);
-
+    
     // Find cheques with release date matching 2 days from now
     const cheques = await mongoose.model('Cheque').find({
       releaseDate: {
@@ -28,21 +27,13 @@ async function sendChequeReminderEmails() {
         $lt: new Date(reminderDate.setHours(23, 59, 59, 999))
       }
     });
-
+    
     // Send email for each cheque
     for (const cheque of cheques) {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: process.env.PREDEFINED_EMAIL,
         subject: 'Upcoming Cheque Release Reminder',
-        text: `Cheque Reminder:
-        
-Cheque Number: ${cheque.chequeNumber}
-Amount: ${cheque.amount}
-Release Date: ${cheque.releaseDate.toDateString()}
-Remark: ${cheque.remark}
-
-Please prepare for the upcoming cheque release.`,
         html: `
         <h2>Cheque Reminder</h2>
         <p><strong>Cheque Number:</strong> ${cheque.chequeNumber}</p>
@@ -52,7 +43,7 @@ Please prepare for the upcoming cheque release.`,
         <p>Please prepare for the upcoming cheque release.</p>
         `
       };
-
+      
       // Send email
       await transporter.sendMail(mailOptions);
       console.log(`Reminder email sent for cheque ${cheque.chequeNumber}`);
@@ -62,13 +53,14 @@ Please prepare for the upcoming cheque release.`,
   }
 }
 
-// Schedule the task to run daily at midnight
-function initializeEmailScheduler() {
-  // Run at midnight every day
-  cron.schedule('0 0 * * *', () => {
-    console.log('Running daily cheque release reminder check');
-    sendChequeReminderEmails();
-  });
+// Function to check and send reminders
+async function checkAndSendReminders() {
+  try {
+    console.log('Checking for cheque reminders...');
+    await sendChequeReminderEmails();
+  } catch (error) {
+    console.error('Error in checking reminders:', error);
+  }
 }
 
-module.exports = { initializeEmailScheduler };
+module.exports = { checkAndSendReminders };
