@@ -167,8 +167,12 @@ mongoose
   })
   .then(() => {
     console.log("Connected to MongoDB");
-    // Initialize email scheduler
-    initializeEmailScheduler(); 
+    
+    // Set up interval to check for reminders every 24 hours
+    setInterval(checkAndSendReminders, 24 * 60 * 60 * 1000);
+    
+    // Optional: Run the first check immediately
+    checkAndSendReminders();
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 
