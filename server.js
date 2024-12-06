@@ -47,15 +47,6 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Root Route - Serve Login Page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// Serve Login Page
-app.get("/login.html", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
 
 // Authentication Route
 app.post("/login", (req, res) => {
