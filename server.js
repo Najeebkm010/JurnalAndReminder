@@ -61,12 +61,13 @@ app.get("/login.html", (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   console.log("Login attempt:", username); // Debugging log
-  
+
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.user = username;
-    res.redirect("/cheque-management.html");
+    req.session.user = username; // Store user in session
+    res.redirect("/cheque-management.html"); // Redirect to cheque management
   } else {
-    res.status(401).send("Invalid credentials");
+    console.error("Invalid login credentials");
+    res.status(401).sendFile(path.join(__dirname, "public", "login.html")); // Send back login page on failure
   }
 });
 
