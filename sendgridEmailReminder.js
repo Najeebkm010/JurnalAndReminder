@@ -1,5 +1,3 @@
-// Complete SendGrid Email Reminder Module
-
 const mongoose = require('mongoose');
 const sgMail = require('@sendgrid/mail');
 
@@ -120,16 +118,33 @@ class SendGridEmailReminder {
 
   // Start reminder scheduler
   startScheduler() {
-    // Check reminders every 24 hours
-    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const scheduleReminderCheck = () => {
+      const now = new Date();
+      const nextCheck = new Date(now);
+      
+      // Set specific time (midnight in this case)
+      nextCheck.setHours(0, 0, 0, 0);
+      
+      // If the time has already passed today, schedule for next day
+      if (nextCheck <= now) {
+        nextCheck.setDate(nextCheck.getDate() + 1);
+      }
+      
+      // Calculate milliseconds until next scheduled check
+      const delay = nextCheck.getTime() - now.getTime();
+      
+      // Set timeout to run at exact time
+      setTimeout(() => {
+        this.checkAndSendReminders();
+        
+        // Set up recurring daily check
+        setInterval(() => this.checkAndSendReminders(), 24 * 60 * 60 * 1000);
+      }, delay);
+      
+      console.log(`Next reminder check scheduled at: ${nextCheck.toLocaleString()}`);
+    };
     
-    // Immediate first check
-    this.checkAndSendReminders();
-    
-    // Set interval for subsequent checks
-    setInterval(() => this.checkAndSendReminders(), TWENTY_FOUR_HOURS);
-    
-    console.log('SendGrid Cheque Reminder Scheduler Started');
+    scheduleReminderCheck();
   }
 }
 
