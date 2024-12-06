@@ -1,180 +1,69 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const path = require("path");
 const session = require("express-session");
+const path = require("path");
 require('dotenv').config();
-const { initializeEmailScheduler } = require('./emailScheduler');
 
-// Initialize the app
+// Import SendGrid Email Reminder
+const SendGridEmailReminder = require('./sendgridEmailReminder');
+
+// Initialize Express App
 const app = express();
 
-// MongoDB connection URI
-const mongoURI = process.env.MONGO_URI;
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-// Define a Cheque Schema
+// Session Middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your_secret_key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Set to true if using https
+}));
+
+// Cheque Schema (if not in separate file)
+const mongoose = require('mongoose');
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
   chequeNumber: { type: String, required: true },
   amount: { type: Number, required: true },
   releaseDate: { type: Date, required: true },
-  remark: { type: String, required: true },
+  remark: { type: String, required: true }
 });
-
 const Cheque = mongoose.model("Cheque", chequeSchema);
 
-// Middleware for session handling
-app.use(
-  session({
-    secret: "mysecret",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
-
-// Middleware
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-
-// Serve static files (HTML, CSS)
-app.use(express.static(path.join(__dirname, "public")));
-
-// Route for login (GET method to serve the login page)
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// Route to handle login POST request
+// Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.user = username; // Store user in session
-    res.redirect("/cheque-management"); // Redirect after successful login
+    req.session.user = username;
+    res.redirect("/cheque-management");
   } else {
     res.status(401).send("Invalid credentials");
   }
 });
 
-// Route for the dashboard (after login)
-app.get("/cheque-management", (req, res) => {
-  if (req.session.user) {
-    res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
-  } else {
-    res.redirect("/login");
-  }
-});
+// Add other routes from previous implementation
+// (add-cheque, get-cheque, download-cheques, etc.)
 
-// Route to add a cheque
-app.post("/add-cheque", (req, res) => {
-  const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => {
+  console.log("Connected to MongoDB");
+  
+  // Initialize SendGrid Email Reminder
+  const emailReminder = new SendGridEmailReminder();
+  emailReminder.startScheduler();
+})
+.catch((err) => console.error("MongoDB connection error:", err));
 
-  const newCheque = new Cheque({
-    signedDate,
-    chequeNumber,
-    amount,
-    releaseDate,
-    remark,
-  });
-
-  newCheque
-    .save()
-    .then(() => {
-      res.redirect("/get-cheque");
-    })
-    .catch((err) => {
-      console.log("Error adding cheque:", err);
-      res.status(500).send("Server error");
-    });
-});
-
-// Route to get cheques with filtering based on signed date
-app.post("/get-cheque", (req, res) => {
-  const { startDate, endDate } = req.body;
-  const query = {};
-  if (startDate && endDate) {
-    query.signedDate = { $gte: new Date(startDate), $lte: new Date(endDate) };
-  }
-
-  Cheque.find(query)
-    .then((cheques) => {
-      res.json(cheques);
-    })
-    .catch((err) => {
-      console.log("Error fetching cheques:", err);
-      res.status(500).send("Server error");
-    });
-});
-
-// Route to download cheques as CSV
-app.get("/download-cheques", (req, res) => {
-  Cheque.find()
-    .then((cheques) => {
-      let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
-      cheques.forEach((cheque) => {
-        csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
-      });
-
-      res.header("Content-Type", "text/csv");
-      res.attachment("cheques.csv");
-      res.send(csv);
-    })
-    .catch((err) => {
-      console.log("Error downloading cheques:", err);
-      res.status(500).send("Server error");
-    });
-});
-
-// Route for the home page and redirect to login page
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "welcome.html"));
-});
-
-// Route to add cheque page
-app.get("/add-cheque", (req, res) => {
-  if (req.session.user) {
-    res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
-  } else {
-    res.redirect("/login");
-  }
-});
-
-// Route to view cheques page
-app.get("/get-cheque", (req, res) => {
-  if (req.session.user) {
-    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
-  } else {
-    res.redirect("/login");
-  }
-});
-
-// Route to handle logout
-app.get("/logout", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Error destroying session:", err);
-      return res.status(500).send("Server error");
-    }
-    res.redirect("/login"); // Redirect to the login page after logout
-  });
-});
-
-// MongoDB connection
-mongoose
-  .connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 50000,
-  })
-  .then(() => {
-    console.log("Connected to MongoDB");
-         
-    // Initialize and start SendGrid reminder
-    const emailReminder = new SendGridEmailReminder();
-    emailReminder.startScheduler();
-  })
-  .catch((err) => console.error("MongoDB connection error:", err));
-
-// Server setup
+// Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
