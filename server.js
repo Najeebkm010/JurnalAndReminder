@@ -49,9 +49,6 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-app.use(express.static(path.join(__dirname, "public"))); // Static files middleware
-app.post("/login", ...); // Ensure routes are defined after this
-
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
