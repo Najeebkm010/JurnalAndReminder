@@ -3,12 +3,12 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const path = require("path");
-require('dotenv').config();
+require("dotenv").config();
 
 // Import SendGrid Email Reminder
-const SendGridEmailReminder = require('./sendgridEmailReminder');
+const SendGridEmailReminder = require("./sendgridEmailReminder");
 
-// Cheque Schema 
+// Cheque Schema
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
   chequeNumber: { type: String, required: true },
@@ -21,7 +21,7 @@ const Cheque = mongoose.model("Cheque", chequeSchema);
 // Initialize Express App
 const app = express();
 
-// Middleware
+// Middleware to parse incoming requests
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
@@ -31,11 +31,11 @@ app.use(express.static(path.join(__dirname, "public")));
 // Session Middleware
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
+    secret: process.env.SESSION_SECRET || "your_secret_key", // Add your own secret key
     resave: false,
     saveUninitialized: true,
     cookie: {
-      secure: false, // Use true only with HTTPS
+      secure: false, // Set to true if using HTTPS
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
     },
   })
@@ -54,7 +54,7 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// Authentication Route (POST)
+// Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
@@ -72,12 +72,12 @@ app.get("/cheque-management.html", requireAuth, (req, res) => {
 
 // Serve Add Cheque Page
 app.get("/add-cheque", requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
+  res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
 });
 
 // Serve Get Cheque Page
 app.get("/get-cheque", requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
+  res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
 });
 
 // Serve Logout Page
@@ -152,19 +152,19 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => {
-  console.log("Connected to MongoDB");
-  
-  // Initialize SendGrid Email Reminder
-  const emailReminder = new SendGridEmailReminder();
-  emailReminder.startScheduler();
-})
-.catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => {
+    console.log("Connected to MongoDB");
 
-module.exports = app;
+    // Initialize SendGrid Email Reminder
+    const emailReminder = new SendGridEmailReminder();
+    emailReminder.startScheduler();
+  })
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-// Start Server if not using a separate index.js
+// Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;
