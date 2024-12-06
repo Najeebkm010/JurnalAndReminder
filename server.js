@@ -8,6 +8,16 @@ require('dotenv').config();
 // Import SendGrid Email Reminder
 const SendGridEmailReminder = require('./sendgridEmailReminder');
 
+// Cheque Schema 
+const chequeSchema = new mongoose.Schema({
+  signedDate: { type: Date, required: true },
+  chequeNumber: { type: String, required: true },
+  amount: { type: Number, required: true },
+  releaseDate: { type: Date, required: true },
+  remark: { type: String, required: true }
+});
+const Cheque = mongoose.model("Cheque", chequeSchema);
+
 // Initialize Express App
 const app = express();
 
@@ -24,17 +34,6 @@ app.use(session({
   cookie: { secure: false } // Set to true if using https
 }));
 
-// Cheque Schema (if not in separate file)
-const mongoose = require('mongoose');
-const chequeSchema = new mongoose.Schema({
-  signedDate: { type: Date, required: true },
-  chequeNumber: { type: String, required: true },
-  amount: { type: Number, required: true },
-  releaseDate: { type: Date, required: true },
-  remark: { type: String, required: true }
-});
-const Cheque = mongoose.model("Cheque", chequeSchema);
-
 // Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
@@ -46,8 +45,66 @@ app.post("/login", (req, res) => {
   }
 });
 
-// Add other routes from previous implementation
-// (add-cheque, get-cheque, download-cheques, etc.)
+// Add Cheque Route
+app.post("/add-cheque", async (req, res) => {
+  try {
+    const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+
+    const newCheque = new Cheque({
+      signedDate,
+      chequeNumber,
+      amount,
+      releaseDate,
+      remark
+    });
+
+    await newCheque.save();
+    res.redirect("/get-cheque");
+  } catch (error) {
+    console.error("Error adding cheque:", error);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get Cheque Route
+app.post("/get-cheque", async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+    const query = {};
+    
+    if (startDate && endDate) {
+      query.signedDate = { 
+        $gte: new Date(startDate), 
+        $lte: new Date(endDate) 
+      };
+    }
+
+    const cheques = await Cheque.find(query);
+    res.json(cheques);
+  } catch (error) {
+    console.error("Error fetching cheques:", error);
+    res.status(500).send("Server error");
+  }
+});
+
+// Download Cheques Route
+app.get("/download-cheques", async (req, res) => {
+  try {
+    const cheques = await Cheque.find();
+    
+    let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
+    cheques.forEach((cheque) => {
+      csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+    });
+
+    res.header("Content-Type", "text/csv");
+    res.attachment("cheques.csv");
+    res.send(csv);
+  } catch (error) {
+    console.error("Error downloading cheques:", error);
+    res.status(500).send("Server error");
+  }
+});
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -68,3 +125,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;
