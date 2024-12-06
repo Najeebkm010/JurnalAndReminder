@@ -29,15 +29,17 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Session Middleware
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'your_secret_key',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { 
-    secure: false, // Set to true if using https
-    maxAge: 1000 * 60 * 60 * 24 // 24 hours
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "your_secret_key",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+      secure: false, // Use true only with HTTPS
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  })
+);
 
 // Middleware to check authentication
 const requireAuth = (req, res, next) => {
@@ -47,23 +49,27 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Serve Login Page on Root
-app.get("/", (req, res) => {
+app.use(express.static(path.join(__dirname, "public"))); // Static files middleware
+app.post("/login", ...); // Ensure routes are defined after this
+
+app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 // Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  console.log("Login attempt:", username); // Debugging log
-
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.user = username; // Store user in session
-    res.redirect("/cheque-management.html"); // Redirect to cheque management
+    req.session.user = username;
+    res.redirect("/cheque-management.html");
   } else {
-    console.error("Invalid login credentials");
-    res.status(401).sendFile(path.join(__dirname, "public", "login.html")); // Send back login page on failure
+    res.status(401).send("Invalid credentials");
   }
+});
+
+app.post("/login", (req, res) => {
+  console.log("Login request received:", req.body);
+  ...
 });
 
 // Cheque Management Page Route
