@@ -73,14 +73,14 @@ app.get("/cheque-management.html", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
 });
 
-// Add Cheque Page Route
-app.get("/add-cheque.html", requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
+// Serve Add Cheque Page
+app.get("/add-cheque", requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
 });
 
-// Get Cheque Page Route
-app.get("/get-cheque.html", requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
+// Serve Get Cheque Page
+app.get("/get-cheque", requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
 });
 
 // Serve Login Page
