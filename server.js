@@ -35,7 +35,8 @@ app.use(
     resave: false,
     saveUninitialized: true,
     cookie: {
-      secure: false, // Set to true if using HTTPS
+      secure: process.env.NODE_ENV === 'production', // Set to true only if using HTTPS in production
+      httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
     },
   })
@@ -43,7 +44,6 @@ app.use(
 
 // Middleware to check authentication
 const requireAuth = (req, res, next) => {
-  console.log("Session:", req.session);  // Debugging log for session
   if (!req.session.user) {
     return res.redirect("/login.html");
   }
@@ -58,10 +58,8 @@ app.get("/login", (req, res) => {
 // Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  console.log("Login attempt:", { username, password });  // Debugging log for login attempt
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     req.session.user = username;
-    console.log("Session after login:", req.session);  // Debugging log for session after login
     res.redirect("/cheque-management.html");
   } else {
     res.status(401).send("Invalid credentials");
