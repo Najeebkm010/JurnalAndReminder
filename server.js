@@ -66,7 +66,6 @@ app.post("/login", (req, res) => {
 
 app.post("/login", (req, res) => {
   console.log("Login request received:", req.body);
-  ...
 });
 
 // Cheque Management Page Route
