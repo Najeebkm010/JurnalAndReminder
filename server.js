@@ -167,12 +167,10 @@ mongoose
   })
   .then(() => {
     console.log("Connected to MongoDB");
-    
-    // Set up interval to check for reminders every 24 hours
-    setInterval(checkAndSendReminders, 24 * 60 * 60 * 1000);
-    
-    // Optional: Run the first check immediately
-    checkAndSendReminders();
+         
+    // Initialize and start SendGrid reminder
+    const emailReminder = new SendGridEmailReminder();
+    emailReminder.startScheduler();
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 
