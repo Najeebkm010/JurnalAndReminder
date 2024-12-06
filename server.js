@@ -33,19 +33,27 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'your_secret_key',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // Set to true if using https
+  cookie: { 
+    secure: false, // Set to true if using https
+    maxAge: 1000 * 60 * 60 * 24 // 24 hours
+  }
 }));
 
 // Middleware to check authentication
 const requireAuth = (req, res, next) => {
   if (!req.session.user) {
-    return res.redirect("/");
+    return res.redirect("/login.html");
   }
   next();
 };
 
 // Root Route - Serve Login Page
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// Serve Login Page
+app.get("/login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
@@ -56,28 +64,93 @@ app.post("/login", (req, res) => {
   
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     req.session.user = username;
-    res.redirect("/cheque-management");
+    res.redirect("/cheque-management.html");
   } else {
     res.status(401).send("Invalid credentials");
   }
 });
 
 // Cheque Management Page Route
-app.get("/cheque-management", requireAuth, (req, res) => {
+app.get("/cheque-management.html", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
 });
 
 // Add Cheque Page Route
-app.get("/add-cheque", requireAuth, (req, res) => {
+app.get("/add-cheque.html", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
 });
 
 // Get Cheque Page Route
-app.get("/get-cheque", requireAuth, (req, res) => {
+app.get("/get-cheque.html", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
 });
 
-// Rest of the routes remain the same as in the previous example...
+// Serve Login Page
+app.get("/logout.html", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error destroying session:", err);
+    }
+    res.redirect("/login.html");
+  });
+});
+
+// Add Cheque Route (POST)
+app.post("/add-cheque", requireAuth, async (req, res) => {
+  try {
+    const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+    const newCheque = new Cheque({
+      signedDate,
+      chequeNumber,
+      amount,
+      releaseDate,
+      remark
+    });
+    await newCheque.save();
+    res.redirect("/get-cheque.html");
+  } catch (error) {
+    console.error("Error adding cheque:", error);
+    res.status(500).send("Server error");
+  }
+});
+
+// Get Cheque Route (POST)
+app.post("/get-cheque", requireAuth, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+    const query = {};
+    
+    if (startDate && endDate) {
+      query.signedDate = { 
+        $gte: new Date(startDate), 
+        $lte: new Date(endDate) 
+      };
+    }
+    const cheques = await Cheque.find(query);
+    res.json(cheques);
+  } catch (error) {
+    console.error("Error fetching cheques:", error);
+    res.status(500).send("Server error");
+  }
+});
+
+// Download Cheques Route
+app.get("/download-cheques", requireAuth, async (req, res) => {
+  try {
+    const cheques = await Cheque.find();
+    
+    let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
+    cheques.forEach((cheque) => {
+      csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+    });
+    res.header("Content-Type", "text/csv");
+    res.attachment("cheques.csv");
+    res.send(csv);
+  } catch (error) {
+    console.error("Error downloading cheques:", error);
+    res.status(500).send("Server error");
+  }
+});
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
@@ -93,10 +166,10 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .catch((err) => console.error("MongoDB connection error:", err));
 
-// Start Server
+module.exports = app;
+
+// Start Server if not using a separate index.js
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-module.exports = app;
