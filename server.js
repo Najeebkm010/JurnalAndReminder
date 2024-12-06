@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
 // Cheque Schema
@@ -17,35 +18,18 @@ const Cheque = mongoose.model("Cheque", chequeSchema);
 // Initialize Express App
 const app = express();
 
+// SendGrid Email Reminder Setup
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-// Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 
-// Authentication Route (In-memory)
+// Authentication State
 let isAuthenticated = false;
 
-// Login Route
-app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// POST Login Route
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  console.log(`Login attempt: ${username}`); // Debugging login
-  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    isAuthenticated = true;
-    console.log(`Authenticated: ${username}`);
-    res.redirect("/cheque-management.html");
-  } else {
-    res.status(401).send("Invalid credentials");
-  }
-});
-
-// Middleware to check authentication
+// Authentication Middleware
 const requireAuth = (req, res, next) => {
   if (!isAuthenticated) {
     return res.redirect("/login.html");
@@ -53,28 +37,40 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Cheque Management Page Route
-app.get("/cheque-management.html", requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
+// Authentication Routes
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// Serve Add Cheque Page
-app.get("/add-cheque", requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
+app.post("/login", (req, res) => {
+  const { username, password } = req.body;
+  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+    isAuthenticated = true;
+    res.redirect("/cheque-management.html");
+  } else {
+    res.status(401).send("Invalid credentials");
+  }
 });
 
-// Serve Get Cheque Page
-app.get("/get-cheque", requireAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
-});
-
-// Serve Logout Page
 app.get("/logout.html", (req, res) => {
   isAuthenticated = false;
   res.redirect("/login.html");
 });
 
-// Add Cheque Route (POST)
+// Protected Routes
+app.get("/cheque-management.html", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
+});
+
+app.get("/add-cheque", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
+});
+
+app.get("/get-cheque", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
+});
+
+// Cheque Management Routes
 app.post("/add-cheque", requireAuth, async (req, res) => {
   try {
     const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
@@ -93,7 +89,6 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
   }
 });
 
-// Get Cheque Route (POST)
 app.post("/get-cheque", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
@@ -113,7 +108,6 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
   }
 });
 
-// Download Cheques Route
 app.get("/download-cheques", requireAuth, async (req, res) => {
   try {
     const cheques = await Cheque.find();
@@ -131,6 +125,68 @@ app.get("/download-cheques", requireAuth, async (req, res) => {
   }
 });
 
+// Email Reminder Function
+async function checkAndSendReminders() {
+  try {
+    const today = new Date();
+    const reminderDate = new Date(today);
+    reminderDate.setDate(today.getDate() + 2);
+    
+    const cheques = await Cheque.find({
+      releaseDate: {
+        $gte: new Date(reminderDate.setHours(0, 0, 0, 0)),
+        $lt: new Date(reminderDate.setHours(23, 59, 59, 999))
+      }
+    });
+    
+    if (cheques.length > 0) {
+      const msg = {
+        to: process.env.RECIPIENT_EMAIL,
+        from: process.env.SENDGRID_SENDER_EMAIL,
+        subject: `Cheque Reminders - ${cheques.length} Upcoming Cheques`,
+        html: generateEmailHTML(cheques)
+      };
+      
+      await sgMail.send(msg);
+      console.log(`Sent reminder email for ${cheques.length} cheques`);
+    }
+  } catch (error) {
+    console.error('Error checking cheque reminders:', error);
+  }
+}
+
+function generateEmailHTML(cheques) {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <body>
+    <h2>Upcoming Cheque Reminders</h2>
+    <table>
+      <tr>
+        <th>Cheque Number</th>
+        <th>Amount</th>
+        <th>Release Date</th>
+        <th>Remark</th>
+      </tr>
+      ${cheques.map(cheque => `
+        <tr>
+          <td>${cheque.chequeNumber}</td>
+          <td>$${cheque.amount.toFixed(2)}</td>
+          <td>${cheque.releaseDate.toDateString()}</td>
+          <td>${cheque.remark}</td>
+        </tr>
+      `).join('')}
+    </table>
+  </body>
+  </html>
+  `;
+}
+
+// Start Reminder Scheduler
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+checkAndSendReminders(); // Immediate first check
+setInterval(checkAndSendReminders, TWENTY_FOUR_HOURS);
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -141,10 +197,10 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .catch((err) => console.error("MongoDB connection error:", err));
 
-module.exports = app;
-
-// Start Server if not using a separate index.js
+// Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;
