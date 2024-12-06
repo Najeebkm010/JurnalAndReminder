@@ -49,11 +49,12 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// Serve Login Page
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// Authentication Route
+// Authentication Route (POST)
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
@@ -62,10 +63,6 @@ app.post("/login", (req, res) => {
   } else {
     res.status(401).send("Invalid credentials");
   }
-});
-
-app.post("/login", (req, res) => {
-  console.log("Login request received:", req.body);
 });
 
 // Cheque Management Page Route
@@ -83,7 +80,7 @@ app.get("/get-cheque", requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
 });
 
-// Serve Login Page
+// Serve Logout Page
 app.get("/logout.html", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
