@@ -3,10 +3,11 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const session = require("express-session");
 const path = require("path");
-require("dotenv").config();
+require('dotenv').config();
+const MongoStore = require('connect-mongo');
 
 // Import SendGrid Email Reminder
-const SendGridEmailReminder = require("./sendgridEmailReminder");
+const SendGridEmailReminder = require('./sendgridEmailReminder');
 
 // Cheque Schema
 const chequeSchema = new mongoose.Schema({
@@ -21,21 +22,22 @@ const Cheque = mongoose.model("Cheque", chequeSchema);
 // Initialize Express App
 const app = express();
 
-// Middleware to parse incoming requests
+// Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 
-// Session Middleware
+// Session Middleware with MongoDB store (for Vercel deployment)
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your_secret_key", // Add your own secret key
+    secret: process.env.SESSION_SECRET || "your_secret_key",
     resave: false,
     saveUninitialized: true,
+    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // Use MongoDB for session storage
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // Set to true only if using HTTPS in production
+      secure: process.env.NODE_ENV === 'production', // secure cookie in production
       httpOnly: true,
       maxAge: 1000 * 60 * 60 * 24, // 24 hours
     },
@@ -44,13 +46,13 @@ app.use(
 
 // Middleware to check authentication
 const requireAuth = (req, res, next) => {
+  console.log('Session:', req.session); // Debugging session
   if (!req.session.user) {
     return res.redirect("/login.html");
   }
   next();
 };
 
-// Serve Login Page
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
@@ -58,8 +60,10 @@ app.get("/login", (req, res) => {
 // Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
+  console.log(`Logging in user: ${username}`); // Debugging login
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     req.session.user = username;
+    console.log(`Session created: ${req.session.user}`); // Debugging session creation
     res.redirect("/cheque-management.html");
   } else {
     res.status(401).send("Invalid credentials");
@@ -153,19 +157,19 @@ mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-  .then(() => {
-    console.log("Connected to MongoDB");
+.then(() => {
+  console.log("Connected to MongoDB");
+  
+  // Initialize SendGrid Email Reminder
+  const emailReminder = new SendGridEmailReminder();
+  emailReminder.startScheduler();
+})
+.catch((err) => console.error("MongoDB connection error:", err));
 
-    // Initialize SendGrid Email Reminder
-    const emailReminder = new SendGridEmailReminder();
-    emailReminder.startScheduler();
-  })
-  .catch((err) => console.error("MongoDB connection error:", err));
+module.exports = app;
 
-// Start Server
+// Start Server if not using a separate index.js
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
-module.exports = app;
