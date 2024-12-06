@@ -34,6 +34,19 @@ app.use(session({
   cookie: { secure: false } // Set to true if using https
 }));
 
+// Middleware to check authentication
+const requireAuth = (req, res, next) => {
+  if (!req.session.user) {
+    return res.redirect("/");
+  }
+  next();
+};
+
+// Root Route - Serve Login Page
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
 // Authentication Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
@@ -45,11 +58,25 @@ app.post("/login", (req, res) => {
   }
 });
 
+// Cheque Management Page Route
+app.get("/cheque-management", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
+});
+
+// Add Cheque Page Route
+app.get("/add-cheque", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "add-cheque.html"));
+});
+
+// Get Cheque Page Route
+app.get("/get-cheque", requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "get-cheque.html"));
+});
+
 // Add Cheque Route
-app.post("/add-cheque", async (req, res) => {
+app.post("/add-cheque", requireAuth, async (req, res) => {
   try {
     const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
-
     const newCheque = new Cheque({
       signedDate,
       chequeNumber,
@@ -57,7 +84,6 @@ app.post("/add-cheque", async (req, res) => {
       releaseDate,
       remark
     });
-
     await newCheque.save();
     res.redirect("/get-cheque");
   } catch (error) {
@@ -67,7 +93,7 @@ app.post("/add-cheque", async (req, res) => {
 });
 
 // Get Cheque Route
-app.post("/get-cheque", async (req, res) => {
+app.post("/get-cheque", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
     const query = {};
@@ -78,7 +104,6 @@ app.post("/get-cheque", async (req, res) => {
         $lte: new Date(endDate) 
       };
     }
-
     const cheques = await Cheque.find(query);
     res.json(cheques);
   } catch (error) {
@@ -88,7 +113,7 @@ app.post("/get-cheque", async (req, res) => {
 });
 
 // Download Cheques Route
-app.get("/download-cheques", async (req, res) => {
+app.get("/download-cheques", requireAuth, async (req, res) => {
   try {
     const cheques = await Cheque.find();
     
@@ -96,7 +121,6 @@ app.get("/download-cheques", async (req, res) => {
     cheques.forEach((cheque) => {
       csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
     });
-
     res.header("Content-Type", "text/csv");
     res.attachment("cheques.csv");
     res.send(csv);
@@ -104,6 +128,16 @@ app.get("/download-cheques", async (req, res) => {
     console.error("Error downloading cheques:", error);
     res.status(500).send("Server error");
   }
+});
+
+// Logout Route
+app.get("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Error destroying session:", err);
+    }
+    res.redirect("/");
+  });
 });
 
 // MongoDB Connection
