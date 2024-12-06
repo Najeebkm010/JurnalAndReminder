@@ -1,13 +1,8 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const session = require("express-session");
 const path = require("path");
 require('dotenv').config();
-const MongoStore = require('connect-mongo');
-
-// Import SendGrid Email Reminder
-const SendGridEmailReminder = require('./sendgridEmailReminder');
 
 // Cheque Schema
 const chequeSchema = new mongoose.Schema({
@@ -29,46 +24,34 @@ app.use(bodyParser.json());
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, "public")));
 
-// Session Middleware with MongoDB store (for Vercel deployment)
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
-    resave: false,
-    saveUninitialized: true,
-    store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }), // Use MongoDB for session storage
-    cookie: {
-      secure: process.env.NODE_ENV === 'production', // secure cookie in production
-      httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    },
-  })
-);
+// Authentication Route (In-memory)
+let isAuthenticated = false;
 
-// Middleware to check authentication
-const requireAuth = (req, res, next) => {
-  console.log('Session:', req.session); // Debugging session
-  if (!req.session.user) {
-    return res.redirect("/login.html");
-  }
-  next();
-};
-
+// Login Route
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// Authentication Route
+// POST Login Route
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
-  console.log(`Logging in user: ${username}`); // Debugging login
+  console.log(`Login attempt: ${username}`); // Debugging login
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
-    req.session.user = username;
-    console.log(`Session created: ${req.session.user}`); // Debugging session creation
+    isAuthenticated = true;
+    console.log(`Authenticated: ${username}`);
     res.redirect("/cheque-management.html");
   } else {
     res.status(401).send("Invalid credentials");
   }
 });
+
+// Middleware to check authentication
+const requireAuth = (req, res, next) => {
+  if (!isAuthenticated) {
+    return res.redirect("/login.html");
+  }
+  next();
+};
 
 // Cheque Management Page Route
 app.get("/cheque-management.html", requireAuth, (req, res) => {
@@ -87,12 +70,8 @@ app.get("/get-cheque", requireAuth, (req, res) => {
 
 // Serve Logout Page
 app.get("/logout.html", (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Error destroying session:", err);
-    }
-    res.redirect("/login.html");
-  });
+  isAuthenticated = false;
+  res.redirect("/login.html");
 });
 
 // Add Cheque Route (POST)
@@ -159,10 +138,6 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => {
   console.log("Connected to MongoDB");
-  
-  // Initialize SendGrid Email Reminder
-  const emailReminder = new SendGridEmailReminder();
-  emailReminder.startScheduler();
 })
 .catch((err) => console.error("MongoDB connection error:", err));
 
