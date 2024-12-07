@@ -1,13 +1,32 @@
 const mongoose = require('mongoose');
 const sgMail = require('@sendgrid/mail');
+const schedule = require('node-schedule');
 
 class SendGridEmailReminder {
   constructor() {
+    // Validate required environment variables
+    this.validateEnvironmentVariables();
+
     // Set SendGrid API Key
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     // Sender email (verified in SendGrid)
     this.sender = process.env.SENDGRID_SENDER_EMAIL;
+  }
+
+  // Validate required environment variables
+  validateEnvironmentVariables() {
+    const requiredEnvVars = [
+      'SENDGRID_API_KEY', 
+      'SENDGRID_SENDER_EMAIL', 
+      'RECIPIENT_EMAIL'
+    ];
+
+    requiredEnvVars.forEach(varName => {
+      if (!process.env[varName]) {
+        throw new Error(`Missing required environment variable: ${varName}`);
+      }
+    });
   }
 
   // Method to send comprehensive cheque reminder email
@@ -64,6 +83,7 @@ class SendGridEmailReminder {
             <tr>
               <th>Cheque Number</th>
               <th>Amount</th>
+              <th>Signed Date</th>
               <th>Release Date</th>
               <th>Remark</th>
             </tr>
@@ -73,7 +93,8 @@ class SendGridEmailReminder {
               <tr>
                 <td>${cheque.chequeNumber}</td>
                 <td>$${cheque.amount.toFixed(2)}</td>
-                <td>${cheque.releaseDate.toDateString()}</td>
+                <td>${new Date(cheque.signedDate).toLocaleDateString()}</td>
+                <td>${new Date(cheque.releaseDate).toLocaleDateString()}</td>
                 <td>${cheque.remark}</td>
               </tr>
             `).join('')}
@@ -110,6 +131,8 @@ class SendGridEmailReminder {
       // Send reminders if cheques found
       if (cheques.length > 0) {
         await this.sendChequeReminders(cheques);
+      } else {
+        console.log('No cheques found for reminder today.');
       }
     } catch (error) {
       console.error('Error checking cheque reminders:', error);
@@ -118,33 +141,13 @@ class SendGridEmailReminder {
 
   // Start reminder scheduler
   startScheduler() {
-    const scheduleReminderCheck = () => {
-      const now = new Date();
-      const nextCheck = new Date(now);
-      
-      // Set specific time (midnight in this case)
-      nextCheck.setHours(0, 0, 0, 0);
-      
-      // If the time has already passed today, schedule for next day
-      if (nextCheck <= now) {
-        nextCheck.setDate(nextCheck.getDate() + 1);
-      }
-      
-      // Calculate milliseconds until next scheduled check
-      const delay = nextCheck.getTime() - now.getTime();
-      
-      // Set timeout to run at exact time
-      setTimeout(() => {
-        this.checkAndSendReminders();
-        
-        // Set up recurring daily check
-        setInterval(() => this.checkAndSendReminders(), 24 * 60 * 60 * 1000);
-      }, delay);
-      
-      console.log(`Next reminder check scheduled at: ${nextCheck.toLocaleString()}`);
-    };
-    
-    scheduleReminderCheck();
+    // Schedule job to run daily at 9:00 AM
+    schedule.scheduleJob('0 9 * * *', async () => {
+      console.log('Running daily cheque reminder check...');
+      await this.checkAndSendReminders();
+    });
+
+    console.log('Cheque reminder scheduler started. Will run daily at 9:00 AM.');
   }
 }
 
