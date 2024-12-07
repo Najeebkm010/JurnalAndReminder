@@ -3,23 +3,26 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const path = require("path");
 const sgMail = require('@sendgrid/mail');
+const SendGridEmailReminder = require('./sendgridEmailReminder');
 require('dotenv').config();
 
 // Cheque Schema
 const chequeSchema = new mongoose.Schema({
   signedDate: { type: Date, required: true },
-  chequeNumber: { type: String, required: true },
-  amount: { type: Number, required: true },
+  chequeNumber: { type: String, required: true, unique: true },
+  amount: { 
+    type: Number, 
+    required: true, 
+    min: [0, 'Amount must be a positive number'] 
+  },
   releaseDate: { type: Date, required: true },
-  remark: { type: String, required: true }
+  remark: { type: String, required: true, maxlength: 500 }
 });
+
 const Cheque = mongoose.model("Cheque", chequeSchema);
 
 // Initialize Express App
 const app = express();
-
-// SendGrid Email Reminder Setup
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -74,18 +77,31 @@ app.get("/get-cheque", requireAuth, (req, res) => {
 app.post("/add-cheque", requireAuth, async (req, res) => {
   try {
     const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+    
+    // Validate input
+    if (new Date(signedDate) > new Date(releaseDate)) {
+      return res.status(400).send("Signed date cannot be after release date");
+    }
+
     const newCheque = new Cheque({
       signedDate,
       chequeNumber,
-      amount,
+      amount: parseFloat(amount),
       releaseDate,
       remark
     });
+    
     await newCheque.save();
     res.redirect("/get-cheque.html");
   } catch (error) {
     console.error("Error adding cheque:", error);
-    res.status(500).send("Server error");
+    
+    // Handle duplicate cheque number
+    if (error.code === 11000) {
+      return res.status(400).send("Cheque number must be unique");
+    }
+    
+    res.status(500).send("Server error: " + error.message);
   }
 });
 
@@ -100,7 +116,7 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
         $lte: new Date(endDate) 
       };
     }
-    const cheques = await Cheque.find(query);
+    const cheques = await Cheque.find(query).sort({ releaseDate: 1 });
     res.json(cheques);
   } catch (error) {
     console.error("Error fetching cheques:", error);
@@ -110,12 +126,13 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
 
 app.get("/download-cheques", requireAuth, async (req, res) => {
   try {
-    const cheques = await Cheque.find();
+    const cheques = await Cheque.find().sort({ releaseDate: 1 });
     
     let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
     cheques.forEach((cheque) => {
-      csv += `${cheque.chequeNumber},${cheque.signedDate},${cheque.amount},${cheque.releaseDate},${cheque.remark}\n`;
+      csv += `${cheque.chequeNumber},${new Date(cheque.signedDate).toLocaleDateString()},${cheque.amount},${new Date(cheque.releaseDate).toLocaleDateString()},${cheque.remark}\n`;
     });
+    
     res.header("Content-Type", "text/csv");
     res.attachment("cheques.csv");
     res.send(csv);
@@ -125,68 +142,6 @@ app.get("/download-cheques", requireAuth, async (req, res) => {
   }
 });
 
-// Email Reminder Function
-async function checkAndSendReminders() {
-  try {
-    const today = new Date();
-    const reminderDate = new Date(today);
-    reminderDate.setDate(today.getDate() + 2);
-    
-    const cheques = await Cheque.find({
-      releaseDate: {
-        $gte: new Date(reminderDate.setHours(0, 0, 0, 0)),
-        $lt: new Date(reminderDate.setHours(23, 59, 59, 999))
-      }
-    });
-    
-    if (cheques.length > 0) {
-      const msg = {
-        to: process.env.RECIPIENT_EMAIL,
-        from: process.env.SENDGRID_SENDER_EMAIL,
-        subject: `Cheque Reminders - ${cheques.length} Upcoming Cheques`,
-        html: generateEmailHTML(cheques)
-      };
-      
-      await sgMail.send(msg);
-      console.log(`Sent reminder email for ${cheques.length} cheques`);
-    }
-  } catch (error) {
-    console.error('Error checking cheque reminders:', error);
-  }
-}
-
-function generateEmailHTML(cheques) {
-  return `
-  <!DOCTYPE html>
-  <html>
-  <body>
-    <h2>Upcoming Cheque Reminders</h2>
-    <table>
-      <tr>
-        <th>Cheque Number</th>
-        <th>Amount</th>
-        <th>Release Date</th>
-        <th>Remark</th>
-      </tr>
-      ${cheques.map(cheque => `
-        <tr>
-          <td>${cheque.chequeNumber}</td>
-          <td>$${cheque.amount.toFixed(2)}</td>
-          <td>${cheque.releaseDate.toDateString()}</td>
-          <td>${cheque.remark}</td>
-        </tr>
-      `).join('')}
-    </table>
-  </body>
-  </html>
-  `;
-}
-
-// Start Reminder Scheduler
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
-checkAndSendReminders(); // Immediate first check
-setInterval(checkAndSendReminders, TWENTY_FOUR_HOURS);
-
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -194,6 +149,10 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => {
   console.log("Connected to MongoDB");
+  
+  // Initialize and start email reminder scheduler
+  const emailReminder = new SendGridEmailReminder();
+  emailReminder.startScheduler();
 })
 .catch((err) => console.error("MongoDB connection error:", err));
 
