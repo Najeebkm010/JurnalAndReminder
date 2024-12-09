@@ -151,7 +151,7 @@ mongoose.connect(process.env.MONGO_URI, {
   console.log("Connected to MongoDB");
   
   // Initialize and start email reminder scheduler
-  const emailReminder = new SendGridEmailReminder();
+  const emailReminder = new SendGridEmailReminder(Cheque);
   emailReminder.startScheduler();
 })
 .catch((err) => console.error("MongoDB connection error:", err));
