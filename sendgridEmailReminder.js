@@ -3,7 +3,7 @@ const sgMail = require('@sendgrid/mail');
 const schedule = require('node-schedule');
 
 class SendGridEmailReminder {
-  constructor() {
+  constructor(ChequeModel) {
     // Validate required environment variables
     this.validateEnvironmentVariables();
 
@@ -12,6 +12,9 @@ class SendGridEmailReminder {
 
     // Sender email (verified in SendGrid)
     this.sender = process.env.SENDGRID_SENDER_EMAIL;
+
+    // Store Cheque Model passed from server
+    this.Cheque = ChequeModel;
   }
 
   // Validate required environment variables
@@ -24,6 +27,7 @@ class SendGridEmailReminder {
 
     requiredEnvVars.forEach(varName => {
       if (!process.env[varName]) {
+        console.error(`Missing required environment variable: ${varName}`);
         throw new Error(`Missing required environment variable: ${varName}`);
       }
     });
@@ -32,6 +36,10 @@ class SendGridEmailReminder {
   // Method to send comprehensive cheque reminder email
   async sendChequeReminders(cheques) {
     try {
+      // Additional logging for debugging
+      console.log('Sending reminders for cheques:', cheques.length);
+      console.log('Recipient Email:', process.env.RECIPIENT_EMAIL);
+
       // Prepare email message
       const msg = {
         to: process.env.RECIPIENT_EMAIL, // Recipient email
@@ -41,14 +49,14 @@ class SendGridEmailReminder {
       };
 
       // Send email
-      await sgMail.send(msg);
-      console.log(`Sent reminder email for ${cheques.length} cheques`);
+      const response = await sgMail.send(msg);
+      console.log('Email sent successfully:', response[0].statusCode);
     } catch (error) {
       console.error('SendGrid Email Error:', error);
       
       // Log detailed error for debugging
       if (error.response) {
-        console.error(error.response.body);
+        console.error('Detailed Error:', error.response.body);
       }
     }
   }
@@ -121,7 +129,7 @@ class SendGridEmailReminder {
       reminderDate.setDate(today.getDate() + 2);
       
       // Find cheques with release date matching 2 days from now
-      const cheques = await mongoose.model('Cheque').find({
+      const cheques = await this.Cheque.find({
         releaseDate: {
           $gte: new Date(reminderDate.setHours(0, 0, 0, 0)),
           $lt: new Date(reminderDate.setHours(23, 59, 59, 999))
