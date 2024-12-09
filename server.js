@@ -58,7 +58,7 @@ const sendChequeAdditionEmail = async (cheque) => {
             <h2>New Cheque Added</h2>
             <div class="details">
               <p><strong>Cheque Number:</strong> ${cheque.chequeNumber}</p>
-              <p><strong>Amount:</strong> $${cheque.amount.toFixed(2)}</p>
+              <p><strong>Amount:</strong> AED${cheque.amount.toFixed(2)}</p>
               <p><strong>Signed Date:</strong> ${new Date(cheque.signedDate).toLocaleDateString()}</p>
               <p><strong>Release Date:</strong> ${new Date(cheque.releaseDate).toLocaleDateString()}</p>
               <p><strong>Remark:</strong> ${cheque.remark}</p>
