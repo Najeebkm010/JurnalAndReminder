@@ -32,6 +32,52 @@ app.use(express.static(path.join(__dirname, "public")));
 // Authentication State
 let isAuthenticated = false;
 
+// SendGrid Email Utility Function
+const sendChequeAdditionEmail = async (cheque) => {
+  try {
+    // Configure SendGrid
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    // Prepare email message
+    const msg = {
+      to: process.env.RECIPIENT_EMAIL,
+      from: process.env.SENDGRID_SENDER_EMAIL,
+      subject: 'New Cheque Added to System',
+      html: `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+            .container { padding: 20px; background-color: #f4f4f4; }
+            .details { background-color: white; padding: 15px; border-radius: 5px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>New Cheque Added</h2>
+            <div class="details">
+              <p><strong>Cheque Number:</strong> ${cheque.chequeNumber}</p>
+              <p><strong>Amount:</strong> $${cheque.amount.toFixed(2)}</p>
+              <p><strong>Signed Date:</strong> ${new Date(cheque.signedDate).toLocaleDateString()}</p>
+              <p><strong>Release Date:</strong> ${new Date(cheque.releaseDate).toLocaleDateString()}</p>
+              <p><strong>Remark:</strong> ${cheque.remark}</p>
+            </div>
+            <p>A new cheque has been added to the system. Please review the details.</p>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    // Send email
+    await sgMail.send(msg);
+    console.log('Cheque addition notification email sent successfully');
+  } catch (error) {
+    console.error('Error sending cheque addition email:', error);
+  }
+};
+
 // Authentication Middleware
 const requireAuth = (req, res, next) => {
   if (!isAuthenticated) {
@@ -91,7 +137,12 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
       remark
     });
     
+    // Save cheque
     await newCheque.save();
+
+    // Send email notification about new cheque
+    await sendChequeAdditionEmail(newCheque);
+
     res.redirect("/get-cheque.html");
   } catch (error) {
     console.error("Error adding cheque:", error);
