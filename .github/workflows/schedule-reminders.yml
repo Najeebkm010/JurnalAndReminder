@@ -11,4 +11,4 @@ jobs:
     steps:
       - name: Trigger Reminder Check
         run: |
-          curl -X GET https://your-app.vercel.app/check-reminders
+          curl -X GET https://jurnal-and-reminder.vercel.app/check-reminders
