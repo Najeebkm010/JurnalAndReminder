@@ -4,7 +4,65 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cheque Management</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* General reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #4b2c15; /* Chocolate-like background */
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .cheque-management {
+      background-color: #fff;
+      color: #4b2c15;
+      width: 400px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .cheque-management h2 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      color: #4b2c15;
+    }
+
+    .btn {
+      display: block;
+      text-decoration: none;
+      background-color: #4b2c15;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 5px;
+      margin: 10px 0;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      background-color: #35210f;
+      transform: translateY(-2px);
+    }
+
+    .logout {
+      background-color: #d9534f;
+    }
+
+    .logout:hover {
+      background-color: #b52e2a;
+    }
+  </style>
 </head>
 <body>
   <div class="cheque-management">
