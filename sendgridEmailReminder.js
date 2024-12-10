@@ -157,55 +157,38 @@ class SendGridEmailReminder {
   }
 
   // Check and send reminders
-  async checkAndSendReminders() {
-    try {
-      // Ensure MongoDB connection
-      if (mongoose.connection.readyState !== 1) {
-        await mongoose.connect(process.env.MONGO_URI, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true
-        });
+async checkAndSendReminders() {
+  try {
+    // Get current date
+    const today = new Date();
+    
+    // Calculate the date 2 days from now
+    const reminderDate = new Date(today);
+    reminderDate.setDate(today.getDate() + 2);
+    
+    // Set time to start of day for consistent comparison
+    reminderDate.setHours(0, 0, 0, 0);
+    
+    // Find cheques with release date matching 2 days from now
+    const cheques = await this.Cheque.find({
+      releaseDate: {
+        $gte: reminderDate,
+        $lt: new Date(reminderDate.getTime() + 24 * 60 * 60 * 1000)  // Next day
       }
-
-      // Get current date
-      const today = new Date();
-      
-      // Calculate the date 2 days from now
-      const reminderDate = new Date(today);
-      reminderDate.setDate(today.getDate() + 2);
-      
-      // Find cheques with release date matching 2 days from now
-      const cheques = await this.Cheque.find({
-        releaseDate: {
-          $gte: new Date(reminderDate.setHours(0, 0, 0, 0)),
-          $lt: new Date(reminderDate.setHours(23, 59, 59, 999))
-        }
-      }).lean(); // Use lean for better performance
-      
-      // Send reminders if cheques found
-      if (cheques.length > 0) {
-        const emailResponse = await this.sendChequeReminders(cheques);
-        
-        console.log(`Sent reminders for ${cheques.length} cheques`, {
-          recipients: process.env.RECIPIENT_EMAIL,
-          chequeNumbers: cheques.map(c => c.chequeNumber)
-        });
-
-        return {
-          success: true,
-          count: cheques.length,
-          emailStatus: emailResponse[0].statusCode
-        };
-      } else {
-        console.log('No cheques found for reminder today.');
-        return {
-          success: true,
-          count: 0,
-          message: 'No cheques due for reminder'
-        };
-      }
-    } catch (error) {
-      console.error('Error checking cheque reminders:', error);
+    });
+    
+    // Send reminders if cheques found
+    if (cheques.length > 0) {
+      await this.sendChequeReminders(cheques);
+      console.log(`Sent reminders for ${cheques.length} cheques`);
+    } else {
+      console.log('No cheques found for reminder today.');
+    }
+  } catch (error) {
+    console.error('Error checking cheque reminders:', error);
+    // Optionally add error notification mechanism
+  }
+}
       
       // Detailed error logging
       console.error('Error Details:', {
