@@ -276,14 +276,21 @@ mongoose.connect(process.env.MONGO_URI, {
 
 app.get('/check-reminders', async (req, res) => {
   try {
+    console.log("Triggered /check-reminders route");
+    
     const emailReminder = new SendGridEmailReminder(Cheque);
+
+    console.log("About to execute checkAndSendReminders...");
     await emailReminder.checkAndSendReminders();
+    console.log("Reminders processed successfully.");
+
     res.status(200).send('Reminders checked successfully');
   } catch (error) {
-    console.error('Reminder check error:', error);
+    console.error('Reminder check failed:', error);
     res.status(500).send('Error checking reminders');
   }
 });
+
 
 // Start Server
 const PORT = process.env.PORT || 3000;
