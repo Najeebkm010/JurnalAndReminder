@@ -13,6 +13,7 @@
   "dependencies": {
     "@sendgrid/mail": "^8.1.4",
     "@types/node": "^18.0.6",
+    "@vercel/speed-insights": "^1.1.0",
     "body-parser": "^1.20.3",
     "connect-mongo": "^5.1.0",
     "connect-redis": "^7.1.1",
