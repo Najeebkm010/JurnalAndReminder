@@ -274,7 +274,7 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .catch((err) => console.error("MongoDB connection error:", err));
 
-app.get('/check-reminders', requireAuth, async (req, res) => {
+app.get('/check-reminders', async (req, res) => {
   try {
     const emailReminder = new SendGridEmailReminder(Cheque);
     await emailReminder.checkAndSendReminders();
