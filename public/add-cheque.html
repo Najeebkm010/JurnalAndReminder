@@ -1,76 +1,162 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Add Cheque</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="container">
-      <!-- Title of the page -->
-      <h2>Add New Cheque</h2>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Cheque</title>
+  <style>
+    /* General reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      <!-- Form container for adding cheque -->
-      <div class="form-container">
-        <form action="/add-cheque" method="POST">
-          <!-- Signed Date input -->
-          <div class="form-group">
-            <label for="signedDate">Signed Date:</label>
-            <input type="date" id="signedDate" name="signedDate" required />
-          </div>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #4b2c15; /* Chocolate-like background */
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
 
-          <!-- Cheque Number input -->
-          <div class="form-group">
-            <label for="chequeNumber">Cheque Number:</label>
-            <input
-              type="text"
-              id="chequeNumber"
-              name="chequeNumber"
-              placeholder="Enter cheque number"
-              required
-            />
-          </div>
+    .container {
+      background-color: #fff;
+      color: #4b2c15;
+      width: 500px;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
 
-          <!-- Amount input -->
-          <div class="form-group">
-            <label for="amount">Amount:</label>
-            <input
-              type="number"
-              id="amount"
-              name="amount"
-              placeholder="Enter cheque amount"
-              required
-            />
-          </div>
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #4b2c15;
+    }
 
-          <!-- Release Date input -->
-          <div class="form-group">
-            <label for="releaseDate">Release Date:</label>
-            <input type="date" id="releaseDate" name="releaseDate" required />
-          </div>
+    .form-container {
+      margin-bottom: 20px;
+    }
 
-          <!-- Remark input -->
-          <div class="form-group">
-            <label for="remark">Remark:</label>
-            <textarea
-              id="remark"
-              name="remark"
-              rows="4"
-              placeholder="Enter any remarks"
-              required
-            ></textarea>
-          </div>
+    .form-group {
+      margin-bottom: 15px;
+    }
 
-          <!-- Submit button -->
-          <button type="submit" class="btn">Add Cheque</button>
-        </form>
-      </div>
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
 
-      <!-- Back button -->
-      <div class="action-buttons">
-        <a href="/cheque-management" class="btn">Back to Cheque Management</a>
-      </div>
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #4b2c15;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      background-color: #4b2c15;
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 5px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background-color: #35210f;
+      transform: translateY(-2px);
+    }
+
+    .action-buttons {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .action-buttons .btn {
+      margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Title of the page -->
+    <h2>Add New Cheque</h2>
+
+    <!-- Form container for adding cheque -->
+    <div class="form-container">
+      <form action="/add-cheque" method="POST">
+        <!-- Signed Date input -->
+        <div class="form-group">
+          <label for="signedDate">Signed Date:</label>
+          <input type="date" id="signedDate" name="signedDate" required />
+        </div>
+
+        <!-- Cheque Number input -->
+        <div class="form-group">
+          <label for="chequeNumber">Cheque Number:</label>
+          <input
+            type="text"
+            id="chequeNumber"
+            name="chequeNumber"
+            placeholder="Enter cheque number"
+            required
+          />
+        </div>
+
+        <!-- Amount input -->
+        <div class="form-group">
+          <label for="amount">Amount:</label>
+          <input
+            type="number"
+            id="amount"
+            name="amount"
+            placeholder="Enter cheque amount"
+            required
+          />
+        </div>
+
+        <!-- Release Date input -->
+        <div class="form-group">
+          <label for="releaseDate">Release Date:</label>
+          <input type="date" id="releaseDate" name="releaseDate" required />
+        </div>
+
+        <!-- Remark input -->
+        <div class="form-group">
+          <label for="remark">Remark:</label>
+          <textarea
+            id="remark"
+            name="remark"
+            rows="4"
+            placeholder="Enter any remarks"
+            required
+          ></textarea>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn">Add Cheque</button>
+      </form>
     </div>
-  </body>
+
+    <!-- Back button -->
+    <div class="action-buttons">
+      <a href="/cheque-management" class="btn">Back to Cheque Management</a>
+    </div>
+  </div>
+</body>
 </html>
