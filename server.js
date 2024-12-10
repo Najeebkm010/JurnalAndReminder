@@ -86,13 +86,20 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// Root Route - Always redirects to login
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
 // Authentication Routes
-app.get("/login", (req, res) => {
+app.get("/login.html", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
+  
+  // Use environment variables for credentials
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     isAuthenticated = true;
     res.redirect("/cheque-management.html");
@@ -101,14 +108,19 @@ app.post("/login", (req, res) => {
   }
 });
 
-app.get("/logout.html", (req, res) => {
+// Logout Route
+app.get("/logout", (req, res) => {
   isAuthenticated = false;
   res.redirect("/login.html");
 });
 
-// Protected Routes
+
 app.get("/cheque-management.html", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
+});
+
+app.get("/cheque-management", requireAuth, (req, res) => {
+  res.redirect("/cheque-management.html");
 });
 
 app.get("/add-cheque", requireAuth, (req, res) => {
@@ -159,6 +171,31 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
 app.post("/get-cheque", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
+    console.log("Received dates:", startDate, endDate); // Server-side logging
+
+    if (!startDate || !endDate) {
+      return res.status(400).send("Start and end dates are required");
+    }
+
+    const query = {
+      signedDate: { 
+        $gte: new Date(startDate), 
+        $lte: new Date(endDate) 
+      }
+    };
+
+    const cheques = await Cheque.find(query).sort({ releaseDate: 1 });
+    console.log("Found cheques:", cheques.length); // Server-side logging
+
+    res.json(cheques);
+  } catch (error) {
+    console.error("Error fetching cheques:", error);
+    res.status(500).send("Server error: " + error.message);
+  }
+});
+app.get("/download-cheques", requireAuth, async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
     const query = {};
     
     if (startDate && endDate) {
@@ -167,17 +204,8 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
         $lte: new Date(endDate) 
       };
     }
+    
     const cheques = await Cheque.find(query).sort({ releaseDate: 1 });
-    res.json(cheques);
-  } catch (error) {
-    console.error("Error fetching cheques:", error);
-    res.status(500).send("Server error");
-  }
-});
-
-app.get("/download-cheques", requireAuth, async (req, res) => {
-  try {
-    const cheques = await Cheque.find().sort({ releaseDate: 1 });
     
     let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
     cheques.forEach((cheque) => {
@@ -193,6 +221,46 @@ app.get("/download-cheques", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/edit-cheque", requireAuth, async (req, res) => {
+  try {
+    const { id, signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+    
+    // Validate input
+    if (new Date(signedDate) > new Date(releaseDate)) {
+      return res.status(400).send("Signed date cannot be after release date");
+    }
+
+    const updatedCheque = await Cheque.findByIdAndUpdate(
+      id, 
+      {
+        signedDate,
+        chequeNumber,
+        amount: parseFloat(amount),
+        releaseDate,
+        remark
+      }, 
+      { 
+        new: true,  // Return the updated document
+        runValidators: true  // Run mongoose validation
+      }
+    );
+
+    if (!updatedCheque) {
+      return res.status(404).send("Cheque not found");
+    }
+
+    res.json(updatedCheque);
+  } catch (error) {
+    console.error("Error updating cheque:", error);
+    
+    // Handle duplicate cheque number
+    if (error.code === 11000) {
+      return res.status(400).send("Cheque number must be unique");
+    }
+    
+    res.status(500).send("Server error: " + error.message);
+  }
+});
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
@@ -200,12 +268,22 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => {
   console.log("Connected to MongoDB");
-  
   // Initialize and start email reminder scheduler
-  const emailReminder = new SendGridEmailReminder(Cheque);
-  emailReminder.startScheduler();
+ // const emailReminder = new SendGridEmailReminder(Cheque);
+  //emailReminder.startScheduler();
 })
 .catch((err) => console.error("MongoDB connection error:", err));
+
+app.get('/check-reminders', requireAuth, async (req, res) => {
+  try {
+    const emailReminder = new SendGridEmailReminder(Cheque);
+    await emailReminder.checkAndSendReminders();
+    res.status(200).send('Reminders checked successfully');
+  } catch (error) {
+    console.error('Reminder check error:', error);
+    res.status(500).send('Error checking reminders');
+  }
+});
 
 // Start Server
 const PORT = process.env.PORT || 3000;
