@@ -1,27 +1,32 @@
+const mongoose = require('mongoose');
+const SendGridEmailReminder = require('../sendgridEmailReminder');
+const Cheque = require('../models/Cheque'); // Assume you have a separate model file
+
 export default async function handler(req, res) {
   try {
-    console.log("Attempting to fetch from https://jurnal-and-reminder.vercel.app/check-reminders");
-
-    const response = await fetch("https://jurnal-and-reminder.vercel.app/check-reminders");
-    
-    if (!response.ok) {
-      throw new Error(`Fetch failed with status: ${response.status}`);
+    // Ensure MongoDB connection
+    if (mongoose.connection.readyState !== 1) {
+      await mongoose.connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+      });
     }
 
-    const data = await response.text();
-    console.log("Response received:", data);
+    // Create email reminder instance
+    const emailReminder = new SendGridEmailReminder(Cheque);
+
+    // Directly call reminder check method
+    await emailReminder.checkAndSendReminders();
 
     res.status(200).json({
       success: true,
-      message: "Reminder triggered successfully",
-      data,
+      message: "Reminders processed successfully"
     });
   } catch (error) {
-    console.error("Error in api/check-reminders.js:", error);
-
+    console.error("Reminder processing error:", error);
     res.status(500).json({
       success: false,
-      error: error.message,
+      error: error.message
     });
   }
 }
