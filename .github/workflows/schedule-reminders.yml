@@ -2,13 +2,19 @@ name: Scheduled Reminder Check
 
 on:
   schedule:
-    # This cron job runs daily at 9:00 AM UTC
-    - cron: '0 13 * * *'
+    # This cron job runs daily at 1:25 PM UTC
+    - cron: '25 13 * * *'
 
 jobs:
   send-reminders:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      - name: Debugging - Show date/time
+        run: |
+          echo "Current time in UTC: $(date -u)"
       - name: Trigger Reminder Check
         run: |
+          echo "Triggering reminder check at $(date -u)"
           curl -X GET https://jurnal-and-reminder.vercel.app/check-reminders
