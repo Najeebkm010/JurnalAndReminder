@@ -3,9 +3,6 @@ const sgMail = require('@sendgrid/mail');
 
 class SendGridEmailReminder {
   constructor(ChequeModel) {
-    // Validate required environment variables
-    this.validateEnvironmentVariables();
-
     // Set SendGrid API Key
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -16,52 +13,29 @@ class SendGridEmailReminder {
     this.Cheque = ChequeModel;
   }
 
-  // Validate required environment variables
-  validateEnvironmentVariables() {
-    const requiredEnvVars = [
-      'SENDGRID_API_KEY',
-      'SENDGRID_SENDER_EMAIL',
-      'RECIPIENT_EMAIL',
-      'MONGO_URI'
-    ];
-
-    requiredEnvVars.forEach(function(varName) {
-      if (!process.env[varName]) {
-        console.error('Missing required environment variable: ' + varName);
-        throw new Error('Missing required environment variable: ' + varName);
-      }
-    });
-  }
-
   // Method to send comprehensive cheque reminder email
   async sendChequeReminders(cheques) {
     try {
-      // Logging for debugging
       console.log('Sending reminders for ' + cheques.length + ' cheques');
       console.log('Recipient Email: ' + process.env.RECIPIENT_EMAIL);
 
-      // Prepare email message
       const msg = {
-        to: process.env.RECIPIENT_EMAIL, // Recipient email
-        from: this.sender, // Verified sender
+        to: process.env.RECIPIENT_EMAIL,
+        from: this.sender,
         subject: 'Cheque Reminders - ' + cheques.length + ' Upcoming Cheques',
         html: this.generateEmailHTML(cheques)
       };
 
-      // Send email
       const response = await sgMail.send(msg);
       console.log('Email sent successfully: ' + response[0].statusCode);
 
       return response;
     } catch (error) {
       console.error('SendGrid Email Error: ', error);
-
-      // Log detailed error for debugging
       if (error.response) {
         console.error('Detailed Error: ', error.response.body);
       }
-
-      throw error; // Rethrow to be handled by caller
+      throw error;
     }
   }
 
@@ -161,25 +135,18 @@ class SendGridEmailReminder {
   // Check and send reminders
   async checkAndSendReminders() {
     try {
-      // Get current date
       const today = new Date();
-      
-      // Calculate the date 2 days from now
       const reminderDate = new Date(today);
       reminderDate.setDate(today.getDate() + 2);
-      
-      // Set time to start of day for consistent comparison
       reminderDate.setHours(0, 0, 0, 0);
 
-      // Query database to find matching cheques
       const cheques = await this.Cheque.find({
         releaseDate: {
           $gte: reminderDate,
-          $lt: new Date(reminderDate.getTime() + 24 * 60 * 60 * 1000)  // End of 2-day range
+          $lt: new Date(reminderDate.getTime() + 24 * 60 * 60 * 1000)
         }
       });
 
-      // Send reminders if cheques found
       if (cheques.length > 0) {
         await this.sendChequeReminders(cheques);
         console.log('Sent reminders for ' + cheques.length + ' cheques');
@@ -188,11 +155,6 @@ class SendGridEmailReminder {
       }
     } catch (error) {
       console.error('Error checking cheque reminders: ', error);
-      console.error('Error Details: ', {
-        'message': error.message,
-        'stack': error.stack,
-        'name': error.name
-      });
       throw error;
     }
   }
