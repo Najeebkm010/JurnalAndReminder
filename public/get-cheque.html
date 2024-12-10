@@ -1,111 +1,326 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Get Cheques</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  </head>
-  <body>
-    <div class="container">
-      <!-- Title of the page -->
-      <h2>Filter and View Cheques</h2>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Cheques</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #4b2c15;
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
 
-      <!-- Form for filtering cheques by signed date -->
-      <div class="form-container">
-        <form id="cheque-filter-form">
-          <div class="form-group">
-            <label for="startDate">Start Date (Signed Date):</label>
-            <input type="date" id="startDate" name="startDate" />
-          </div>
+    .container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      background: ##4b2c15;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
 
-          <div class="form-group">
-            <label for="endDate">End Date (Signed Date):</label>
-            <input type="date" id="endDate" name="endDate" />
-          </div>
+    h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: #4b2c15;
+    }
 
-          <button type="submit" class="btn">Filter Cheques</button>
-        </form>
-      </div>
+    h3 {
+      text-align: center;
+      font-size: 1.5rem;
+      color: #4b2c15;
+    }
 
-      <!-- Display filtered cheques in a user-friendly table -->
-      <h3>Filtered Cheques</h3>
-      <div id="cheque-list">
-        <!-- Filtered cheque data will appear here -->
-        <p>Use the filter above to view cheques.</p>
-      </div>
+    .form-container {
+      margin-bottom: 30px;
+    }
 
-      <!-- Button to download cheques -->
-      <div class="action-buttons">
-        <button id="download-btn" class="btn">Download Cheques as CSV</button>
-        <a href="/cheque-management" class="btn">Back to Cheque Management</a>
-      </div>
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: #4b2c15;
+    }
+
+    button {
+      display: inline-block;
+      padding: 12px 20px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #4b2c15;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0f0f0f;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #fff;
+      background-color: #4b2c15;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background-color: #1d3557;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    table, th, td {
+      border: 1px solid #e0e0e0;
+    }
+
+    th {
+      background-color: #4b2c15;
+      color: #fff;
+      font-weight: 500;
+      text-transform: uppercase;
+      padding: 12px;
+    }
+
+    td {
+      padding: 12px;
+      text-align: center;
+      color: #333;
+    }
+
+    .edit-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .edit-modal-content {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      width: 400px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .edit-modal-content input, 
+    .edit-modal-content textarea {
+      width: 100%;
+      margin-bottom: 15px;
+      padding: 12px;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Filter and View Cheques</h2>
+
+    <div class="form-container">
+      <form id="cheque-filter-form">
+        <div class="form-group">
+          <label for="startDate">Start Date (Signed Date):</label>
+          <input type="date" id="startDate" name="startDate" />
+        </div>
+
+        <div class="form-group">
+          <label for="endDate">End Date (Signed Date):</label>
+          <input type="date" id="endDate" name="endDate" />
+        </div>
+
+        <button type="submit" class="btn">Filter Cheques</button>
+      </form>
     </div>
 
-    <script>
-      $(document).ready(function () {
-        // Handle form submission
-        $("#cheque-filter-form").submit(function (event) {
-          event.preventDefault(); // Prevent default form submission
+    <h3>Filtered Cheques</h3>
+    <div id="cheque-list">
+      <p>Use the filter above to view cheques.</p>
+    </div>
 
-          // Get form data
-          const startDate = $("#startDate").val();
-          const endDate = $("#endDate").val();
+    <div class="action-buttons">
+      <button id="download-btn" class="btn">Download Cheques as CSV</button>
+      <a href="/cheque-management" class="btn">Back to Cheque Management</a>
+    </div>
 
-          // Send AJAX request to fetch cheques based on the signed date filter
-          $.ajax({
-            url: "/get-cheque",
-            method: "POST",
-            data: { startDate, endDate },
-            success: function (response) {
-              if (response.length > 0) {
-                // If data is returned, display it in a table
-                let chequeTable = `
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Cheque Number</th>
-                      <th>Signed Date</th>
-                      <th>Amount</th>
-                      <th>Release Date</th>
-                      <th>Remark</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
+    <div id="editModal" class="edit-modal">
+      <div class="edit-modal-content">
+        <h3>Edit Cheque</h3>
+        <form id="editChequeForm">
+          <input type="hidden" id="editChequeId" name="id">
+          
+          <label for="editSignedDate">Signed Date:</label>
+          <input type="date" id="editSignedDate" name="signedDate" required>
+          
+          <label for="editChequeNumber">Cheque Number:</label>
+          <input type="text" id="editChequeNumber" name="chequeNumber" required>
+          
+          <label for="editAmount">Amount:</label>
+          <input type="number" id="editAmount" name="amount" step="0.01" required>
+          
+          <label for="editReleaseDate">Release Date:</label>
+          <input type="date" id="editReleaseDate" name="releaseDate" required>
+          
+          <label for="editRemark">Remark:</label>
+          <textarea id="editRemark" name="remark" maxlength="500" required></textarea>
+          
+          <div>
+            <button type="submit" class="btn">Save Changes</button>
+            <button type="button" id="cancelEdit" class="btn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
-                // Loop through cheques and populate the table rows
-                response.forEach((cheque) => {
-                  chequeTable += `
+  <script>
+    $(document).ready(function () {
+      let currentCheques = [];
+
+      $("#cheque-filter-form").submit(function (event) {
+        event.preventDefault();
+        const startDate = $("#startDate").val();
+        const endDate = $("#endDate").val();
+
+        if (!startDate || !endDate) {
+          alert("Please select both start and end dates.");
+          return;
+        }
+
+        $.ajax({
+          url: "/get-cheque",
+          method: "POST",
+          data: { startDate, endDate },
+          success: function (response) {
+            currentCheques = response;
+            if (response.length > 0) {
+              let chequeTable = `
+              <table>
+                <thead>
                   <tr>
-                    <td>${cheque.chequeNumber}</td>
-                    <td>${new Date(cheque.signedDate).toLocaleDateString()}</td>
-                    <td>${cheque.amount}</td>
-                    <td>${new Date(cheque.releaseDate).toLocaleDateString()}</td>
-                    <td>${cheque.remark}</td>
-                  </tr>`;
-                });
+                    <th>Cheque Number</th>
+                    <th>Signed Date</th>
+                    <th>Amount</th>
+                    <th>Release Date</th>
+                    <th>Remark</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>`;
 
-                chequeTable += `</tbody></table>`;
-                $("#cheque-list").html(chequeTable);
-              } else {
-                // If no cheques found, display a message
-                $("#cheque-list").html(
-                  "<p>No cheques found for the selected signed date range.</p>",
-                );
-              }
-            },
-            error: function () {
-              alert("Error fetching cheques.");
-            },
-          });
-        });
+              response.forEach((cheque, index) => {
+                chequeTable += `
+                <tr>
+                  <td>${cheque.chequeNumber}</td>
+                  <td>${new Date(cheque.signedDate).toLocaleDateString()}</td>
+                  <td>${cheque.amount}</td>
+                  <td>${new Date(cheque.releaseDate).toLocaleDateString()}</td>
+                  <td>${cheque.remark}</td>
+                  <td>
+                    <button class="edit-btn" data-index="${index}">Edit</button>
+                  </td>
+                </tr>`;
+              });
 
-        // Handle the download CSV functionality
-        $("#download-btn").click(function () {
-          window.location.href = "/download-cheques"; // Initiates the CSV download
+              chequeTable += `</tbody></table>`;
+              $("#cheque-list").html(chequeTable);
+            } else {
+              $("#cheque-list").html("<p>No cheques found for the selected signed date range.</p>");
+            }
+          },
+          error: function (xhr) {
+            alert("Error fetching cheques: " + xhr.responseText);
+          },
         });
       });
-    </script>
-  </body>
+
+      $(document).on('click', '.edit-btn', function() {
+        const index = $(this).data('index');
+        const cheque = currentCheques[index];
+
+        $('#editChequeId').val(cheque._id);
+        $('#editSignedDate').val(new Date(cheque.signedDate).toISOString().split('T')[0]);
+        $('#editChequeNumber').val(cheque.chequeNumber);
+        $('#editAmount').val(cheque.amount);
+        $('#editReleaseDate').val(new Date(cheque.releaseDate).toISOString().split('T')[0]);
+        $('#editRemark').val(cheque.remark);
+
+        $('#editModal').css('display', 'flex');
+      });
+
+      $('#cancelEdit').click(function() {
+        $('#editModal').css('display', 'none');
+      });
+
+      $('#editChequeForm').submit(function(event) {
+        event.preventDefault();
+        const signedDate = new Date($('#editSignedDate').val());
+        const releaseDate = new Date($('#editReleaseDate').val());
+
+        if (signedDate > releaseDate) {
+          alert("Signed date cannot be after release date.");
+          return;
+        }
+
+        $.ajax({
+          url: '/edit-cheque',
+          method: 'POST',
+          data: $(this).serialize(),
+          success: function() {
+            alert('Cheque updated successfully!');
+            $('#editModal').css('display', 'none');
+            $('#cheque-filter-form').submit();
+          },
+          error: function(xhr) {
+            alert("Error updating cheque: " + xhr.responseText);
+          }
+        });
+      });
+    });
+  </script>
+</body>
 </html>
