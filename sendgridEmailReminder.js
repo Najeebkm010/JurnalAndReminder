@@ -100,7 +100,7 @@ class SendGridEmailReminder {
             ${cheques.map(cheque => `
               <tr>
                 <td>${cheque.chequeNumber}</td>
-                <td>$${cheque.amount.toFixed(2)}</td>
+                <td>AED${cheque.amount.toFixed(2)}</td>
                 <td>${new Date(cheque.signedDate).toLocaleDateString()}</td>
                 <td>${new Date(cheque.releaseDate).toLocaleDateString()}</td>
                 <td>${cheque.remark}</td>
@@ -150,13 +150,12 @@ class SendGridEmailReminder {
   // Start reminder scheduler
   startScheduler() {
     // Schedule job to run daily at 9:00 AM
-    schedule.scheduleJob('0 9 * * *', async () => {
-      console.log('Running daily cheque reminder check...');
-      await this.checkAndSendReminders();
-    });
-
-    console.log('Cheque reminder scheduler started. Will run daily at 9:00 AM.');
+    //schedule.scheduleJob('0 9 * * *', async () => {
+      console.log('Scheduler not supported in serverless environment');
+      //await this.checkAndSendReminders();
   }
+
+   
 }
 
 module.exports = SendGridEmailReminder;
