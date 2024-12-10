@@ -3,7 +3,7 @@ name: Scheduled Reminder Check
 on:
   schedule:
     # Cron expression to run at 1:00 PM UTC (daily)
-    - cron: '45 13 * * *'   # This means 1:00 PM UTC daily
+    - cron: '00 14 * * *'   # This means 1:00 PM UTC daily
 
 jobs:
   send-reminders:
