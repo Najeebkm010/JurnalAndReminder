@@ -5,6 +5,7 @@ const path = require("path");
 const sgMail = require('@sendgrid/mail');
 const SendGridEmailReminder = require('./sendgridEmailReminder');
 require('dotenv').config();
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 // Cheque Schema
 const chequeSchema = new mongoose.Schema({
