@@ -274,11 +274,30 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .catch((err) => console.error("MongoDB connection error:", err));
 
-app.get('/check-reminders', async (req, res) => {
+// Add this near the top of your server file, where you have other environment configurations
+const REMINDER_CHECK_TOKEN = process.env.REMINDER_CHECK_TOKEN;
+
+// Modify the existing route
+app.get('/check-reminders', (req, res) => {
+  // Extract token from query parameters
+  const { token } = req.query;
+
+  // Check if token is provided and matches the environment variable
+  if (!token || token !== REMINDER_CHECK_TOKEN) {
+    return res.status(403).send('Unauthorized access');
+  }
+
+  // If token is valid, proceed with reminder check
   try {
     const emailReminder = new SendGridEmailReminder(Cheque);
-    await emailReminder.checkAndSendReminders();
-    res.status(200).send('Reminders checked successfully');
+    emailReminder.checkAndSendReminders()
+      .then(() => {
+        res.status(200).send('Reminders checked successfully');
+      })
+      .catch((error) => {
+        console.error('Reminder check error:', error);
+        res.status(500).send('Error checking reminders');
+      });
   } catch (error) {
     console.error('Reminder check error:', error);
     res.status(500).send('Error checking reminders');
