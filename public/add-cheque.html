@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Add Cheque</title>
   <style>
-     /* General reset */
     * {
       margin: 0;
       padding: 0;
@@ -13,161 +12,113 @@
     }
 
     body {
-      font-family: 'Arial', sans-serif;
-      background-color: #4b2c15; /* Chocolate-like background */
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: white;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
     }
 
     .container {
-      background-color: #fff;
-      color: #4b2c15;
-      width: 500px;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 500px;
+      padding: 40px;
+      border: 2px solid black;
     }
 
     h2 {
-      font-size: 1.8rem;
-      margin-bottom: 20px;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 32px;
       text-align: center;
-      color: #4b2c15;
-    }
-
-    .form-container {
-      margin-bottom: 20px;
     }
 
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 24px;
     }
 
     label {
       display: block;
-      font-weight: bold;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      font-weight: 500;
     }
 
-    input, textarea {
+    input, textarea, select {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 1rem;
+      padding: 12px;
+      border: 2px solid black;
+      font-size: 16px;
+      background: white;
     }
 
-    input:focus, textarea:focus {
-      outline: none;
-      border-color: #4b2c15;
+    textarea {
+      min-height: 100px;
+      resize: vertical;
     }
 
     .btn {
-      display: inline-block;
-      text-decoration: none;
-      background-color: #4b2c15;
-      color: #fff;
-      padding: 10px 15px;
-      border-radius: 5px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-      text-align: center;
+      width: 100%;
+      padding: 16px;
+      background: white;
+      border: 2px solid black;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
     .btn:hover {
-      background-color: #35210f;
-      transform: translateY(-2px);
+      background: black;
+      color: white;
     }
 
     .action-buttons {
-      text-align: center;
-      margin-top: 10px;
-    }
-
-    .action-buttons .btn {
-      margin: 0 5px;
-    }
-    select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 1rem;
-      background-color: white;
-    }
-    
-    select:focus {
-      outline: none;
-      border-color: #4b2c15;
+      margin-top: 24px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Add New Cheque</h2>
-    <div class="form-container">
-      <form action="/add-cheque" method="POST">
-        <div class="form-group">
-          <label for="signedDate">Signed Date:</label>
-          <input type="date" id="signedDate" name="signedDate" required />
-        </div>
+    <form action="/add-cheque" method="POST">
+      <div class="form-group">
+        <label for="signedDate">Signed Date</label>
+        <input type="date" id="signedDate" name="signedDate" required>
+      </div>
 
-        <div class="form-group">
-          <label for="chequeNumber">Cheque Number:</label>
-          <input
-            type="text"
-            id="chequeNumber"
-            name="chequeNumber"
-            placeholder="Enter cheque number"
-            required
-          />
-        </div>
+      <div class="form-group">
+        <label for="chequeNumber">Cheque Number</label>
+        <input type="text" id="chequeNumber" name="chequeNumber" required>
+      </div>
 
-        <div class="form-group">
-          <label for="amount">Amount:</label>
-          <input
-            type="number"
-            id="amount"
-            name="amount"
-            placeholder="Enter cheque amount"
-            required
-          />
-        </div>
+      <div class="form-group">
+        <label for="amount">Amount</label>
+        <input type="number" id="amount" name="amount" required>
+      </div>
 
-        <div class="form-group">
-          <label for="releaseDate">Release Date:</label>
-          <input type="date" id="releaseDate" name="releaseDate" required />
-        </div>
+      <div class="form-group">
+        <label for="releaseDate">Release Date</label>
+        <input type="date" id="releaseDate" name="releaseDate" required>
+      </div>
 
-        <div class="form-group">
-          <label for="remark">Remark:</label>
-          <textarea
-            id="remark"
-            name="remark"
-            rows="4"
-            placeholder="Enter any remarks"
-            required
-          ></textarea>
-        </div>
+      <div class="form-group">
+        <label for="remark">Remark</label>
+        <textarea id="remark" name="remark" required></textarea>
+      </div>
 
-        <div class="form-group">
-          <label for="status">Status:</label>
-          <select id="status" name="status" required>
-            <option value="Pending">Pending</option>
-            <option value="Released">Released</option>
-          </select>
-        </div>
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select id="status" name="status" required>
+          <option value="Pending">Pending</option>
+          <option value="Released">Released</option>
+        </select>
+      </div>
 
-        <button type="submit" class="btn">Add Cheque</button>
-      </form>
-    </div>
-
-    <div class="action-buttons">
-      <a href="/cheque-management" class="btn">Back to Cheque Management</a>
-    </div>
+      <button type="submit" class="btn">Add Cheque</button>
+      <div class="action-buttons">
+        <a href="/cheque-management" class="btn">Back</a>
+      </div>
+    </form>
   </div>
 </body>
 </html>
