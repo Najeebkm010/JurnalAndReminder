@@ -16,7 +16,13 @@ const chequeSchema = new mongoose.Schema({
     min: [0, 'Amount must be a positive number'] 
   },
   releaseDate: { type: Date, required: true },
-  remark: { type: String, required: true, maxlength: 500 }
+  remark: { type: String, required: true, maxlength: 500 },
+  status: { 
+    type: String, 
+    enum: ['Pending', 'Released'], 
+    default: 'Pending',
+    required: true 
+  }
 });
 
 const Cheque = mongoose.model("Cheque", chequeSchema);
@@ -35,10 +41,8 @@ let isAuthenticated = false;
 // SendGrid Email Utility Function
 const sendChequeAdditionEmail = async (cheque) => {
   try {
-    // Configure SendGrid
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-    // Prepare email message
     const msg = {
       to: process.env.RECIPIENT_EMAIL,
       from: process.env.SENDGRID_SENDER_EMAIL,
@@ -62,6 +66,7 @@ const sendChequeAdditionEmail = async (cheque) => {
               <p><strong>Signed Date:</strong> ${new Date(cheque.signedDate).toLocaleDateString()}</p>
               <p><strong>Release Date:</strong> ${new Date(cheque.releaseDate).toLocaleDateString()}</p>
               <p><strong>Remark:</strong> ${cheque.remark}</p>
+              <p><strong>Status:</strong> ${cheque.status}</p>
             </div>
             <p>A new cheque has been added to the system. Please review the details.</p>
           </div>
@@ -70,7 +75,6 @@ const sendChequeAdditionEmail = async (cheque) => {
       `
     };
 
-    // Send email
     await sgMail.send(msg);
     console.log('Cheque addition notification email sent successfully');
   } catch (error) {
@@ -86,7 +90,7 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
-// Root Route - Always redirects to login
+// Root Route
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
@@ -99,7 +103,6 @@ app.get("/login.html", (req, res) => {
 app.post("/login", (req, res) => {
   const { username, password } = req.body;
   
-  // Use environment variables for credentials
   if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
     isAuthenticated = true;
     res.redirect("/cheque-management.html");
@@ -108,13 +111,12 @@ app.post("/login", (req, res) => {
   }
 });
 
-// Logout Route
 app.get("/logout", (req, res) => {
   isAuthenticated = false;
   res.redirect("/login.html");
 });
 
-
+// Page Routes
 app.get("/cheque-management.html", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "public", "cheque-management.html"));
 });
@@ -136,7 +138,6 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
   try {
     const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
     
-    // Validate input
     if (new Date(signedDate) > new Date(releaseDate)) {
       return res.status(400).send("Signed date cannot be after release date");
     }
@@ -146,20 +147,16 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
       chequeNumber,
       amount: parseFloat(amount),
       releaseDate,
-      remark
+      remark,
+      status: 'Pending' // Default status
     });
     
-    // Save cheque
     await newCheque.save();
-
-    // Send email notification about new cheque
     await sendChequeAdditionEmail(newCheque);
-
     res.redirect("/get-cheque.html");
   } catch (error) {
     console.error("Error adding cheque:", error);
     
-    // Handle duplicate cheque number
     if (error.code === 11000) {
       return res.status(400).send("Cheque number must be unique");
     }
@@ -171,7 +168,7 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
 app.post("/get-cheque", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
-    console.log("Received dates:", startDate, endDate); // Server-side logging
+    console.log("Received dates:", startDate, endDate);
 
     if (!startDate || !endDate) {
       return res.status(400).send("Start and end dates are required");
@@ -185,7 +182,7 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
     };
 
     const cheques = await Cheque.find(query).sort({ releaseDate: 1 });
-    console.log("Found cheques:", cheques.length); // Server-side logging
+    console.log("Found cheques:", cheques.length);
 
     res.json(cheques);
   } catch (error) {
@@ -193,6 +190,7 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
     res.status(500).send("Server error: " + error.message);
   }
 });
+
 app.get("/download-cheques", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -207,9 +205,9 @@ app.get("/download-cheques", requireAuth, async (req, res) => {
     
     const cheques = await Cheque.find(query).sort({ releaseDate: 1 });
     
-    let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark\n";
+    let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark,Status\n";
     cheques.forEach((cheque) => {
-      csv += `${cheque.chequeNumber},${new Date(cheque.signedDate).toLocaleDateString()},${cheque.amount},${new Date(cheque.releaseDate).toLocaleDateString()},${cheque.remark}\n`;
+      csv += `${cheque.chequeNumber},${new Date(cheque.signedDate).toLocaleDateString()},${cheque.amount},${new Date(cheque.releaseDate).toLocaleDateString()},${cheque.remark},${cheque.status}\n`;
     });
     
     res.header("Content-Type", "text/csv");
@@ -223,9 +221,8 @@ app.get("/download-cheques", requireAuth, async (req, res) => {
 
 app.post("/edit-cheque", requireAuth, async (req, res) => {
   try {
-    const { id, signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+    const { id, signedDate, chequeNumber, amount, releaseDate, remark, status } = req.body;
     
-    // Validate input
     if (new Date(signedDate) > new Date(releaseDate)) {
       return res.status(400).send("Signed date cannot be after release date");
     }
@@ -237,11 +234,12 @@ app.post("/edit-cheque", requireAuth, async (req, res) => {
         chequeNumber,
         amount: parseFloat(amount),
         releaseDate,
-        remark
+        remark,
+        status
       }, 
       { 
-        new: true,  // Return the updated document
-        runValidators: true  // Run mongoose validation
+        new: true,
+        runValidators: true
       }
     );
 
@@ -253,7 +251,6 @@ app.post("/edit-cheque", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Error updating cheque:", error);
     
-    // Handle duplicate cheque number
     if (error.code === 11000) {
       return res.status(400).send("Cheque number must be unique");
     }
@@ -261,33 +258,17 @@ app.post("/edit-cheque", requireAuth, async (req, res) => {
     res.status(500).send("Server error: " + error.message);
   }
 });
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log("Connected to MongoDB");
-  // Initialize and start email reminder scheduler
- // const emailReminder = new SendGridEmailReminder(Cheque);
-  //emailReminder.startScheduler();
-})
-.catch((err) => console.error("MongoDB connection error:", err));
 
-// Add this near the top of your server file, where you have other environment configurations
+// Reminder Check Route
 const REMINDER_CHECK_TOKEN = process.env.REMINDER_CHECK_TOKEN;
 
-// Modify the existing route
 app.get('/check-reminders', (req, res) => {
-  // Extract token from query parameters
   const { token } = req.query;
 
-  // Check if token is provided and matches the environment variable
   if (!token || token !== REMINDER_CHECK_TOKEN) {
     return res.status(403).send('Unauthorized access');
   }
 
-  // If token is valid, proceed with reminder check
   try {
     const emailReminder = new SendGridEmailReminder(Cheque);
     emailReminder.checkAndSendReminders()
@@ -304,6 +285,15 @@ app.get('/check-reminders', (req, res) => {
   }
 });
 
+// MongoDB Connection
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => {
+  console.log("Connected to MongoDB");
+})
+.catch((err) => console.error("MongoDB connection error:", err));
 
 // Start Server
 const PORT = process.env.PORT || 3000;
