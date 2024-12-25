@@ -3,127 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Get Cheques</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <title>View Cheques</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #4b2c15;
+    * {
       margin: 0;
       padding: 0;
-      color: #333;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: white;
+      padding: 40px 20px;
     }
 
     .container {
-      max-width: 900px;
-      margin: 50px auto;
-      padding: 20px;
-      background: ##4b2c15;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 40px;
+      border: 2px solid black;
     }
 
-    h2 {
+    h2, h3 {
+      font-size: 24px;
+      margin-bottom: 32px;
       text-align: center;
-      font-size: 2rem;
-      margin-bottom: 20px;
-      color: #4b2c15;
-    }
-
-    h3 {
-      text-align: center;
-      font-size: 1.5rem;
-      color: #4b2c15;
     }
 
     .form-container {
-      margin-bottom: 30px;
+      margin-bottom: 40px;
     }
 
     .form-group {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
 
     label {
       display: block;
-      font-weight: 500;
       margin-bottom: 8px;
+      font-weight: 500;
     }
 
-    input {
+    input, select, textarea {
       width: 100%;
       padding: 12px;
-      border: 1px solid #ced4da;
-      border-radius: 8px;
+      border: 2px solid black;
       font-size: 16px;
-      outline: none;
-      transition: border-color 0.3s;
+      background: white;
     }
 
-    input:focus {
-      border-color: #4b2c15;
-    }
-
-    button {
+    button, .btn {
+      padding: 12px 24px;
+      background: white;
+      border: 2px solid black;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      color: black;
       display: inline-block;
-      padding: 12px 20px;
-      font-size: 16px;
-      color: #fff;
-      background-color: #4b2c15;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
+      transition: all 0.2s;
     }
 
-    button:hover {
-      background-color: #0f0f0f;
-    }
-
-    .btn {
-      padding: 10px 18px;
-      margin-top: 10px;
-      font-size: 16px;
-      color: #fff;
-      background-color: #4b2c15;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      text-align: center;
-    }
-
-    .btn:hover {
-      background-color: #1d3557;
+    button:hover, .btn:hover {
+      background: black;
+      color: white;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      margin: 32px 0;
+      border: 2px solid black;
     }
 
-    table, th, td {
-      border: 1px solid #e0e0e0;
+    th, td {
+      padding: 16px;
+      border: 1px solid black;
+      text-align: left;
     }
 
     th {
-      background-color: #4b2c15;
-      color: #fff;
-      font-weight: 500;
-      text-transform: uppercase;
-      padding: 12px;
+      background: black;
+      color: white;
     }
 
-    td {
-      padding: 12px;
-      text-align: center;
-      color: #333;
-    }
+    .status-pending { font-weight: bold; }
+    .status-released { font-weight: bold; }
 
     .edit-modal {
       position: fixed;
@@ -131,53 +97,33 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.8);
       display: none;
       justify-content: center;
       align-items: center;
-      z-index: 1000;
     }
 
     .edit-modal-content {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 12px;
-      width: 400px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      background: white;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      border: 2px solid black;
     }
 
-    .edit-modal-content input, 
-    .edit-modal-content textarea {
-      width: 100%;
-      margin-bottom: 15px;
-      padding: 12px;
-      border: 1px solid #ced4da;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ced4da;
-      border-radius: 8px;
-      font-size: 16px;
-      outline: none;
-      transition: border-color 0.3s;
-      background-color: white;
+    .action-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 24px;
     }
 
-    select:focus {
-      border-color: #4b2c15;
+    .action-buttons .btn {
+      flex: 1;
     }
 
-    .status-pending {
-      color: #e67e22;
-      font-weight: 500;
-    }
-
-    .status-released {
-      color: #27ae60;
-      font-weight: 500;
+    textarea {
+      min-height: 100px;
+      resize: vertical;
     }
   </style>
 </head>
@@ -186,64 +132,75 @@
     <h2>Filter and View Cheques</h2>
 
     <div class="form-container">
-      <<form id="cheque-filter-form">
+      <form id="cheque-filter-form">
         <div class="form-group">
-          <label for="startDate">Start Date (Signed Date):</label>
-          <input type="date" id="startDate" name="startDate" />
+          <label for="startDate">Start Date</label>
+          <input type="date" id="startDate" name="startDate" required>
         </div>
 
         <div class="form-group">
-          <label for="endDate">End Date (Signed Date):</label>
-          <input type="date" id="endDate" name="endDate" />
+          <label for="endDate">End Date</label>
+          <input type="date" id="endDate" name="endDate" required>
         </div>
 
-        <button type="submit" class="btn">Filter Cheques</button>
+        <button type="submit">Filter Cheques</button>
       </form>
     </div>
 
-    <h3>Filtered Cheques</h3>
     <div id="cheque-list">
       <p>Use the filter above to view cheques.</p>
     </div>
 
     <div class="action-buttons">
-      <button id="download-btn" class="btn">Download Cheques as CSV</button>
-      <a href="/cheque-management" class="btn">Back to Cheque Management</a>
+      <button id="download-btn">Download CSV</button>
+      <a href="/cheque-management" class="btn">Back</a>
     </div>
+  </div>
 
-    <div id="editModal" class="edit-modal">
-      <div class="edit-modal-content">
-        <h3>Edit Cheque</h3>
-        <form id="editChequeForm">
-          <input type="hidden" id="editChequeId" name="id">
-          
-          <label for="editSignedDate">Signed Date:</label>
+  <div id="editModal" class="edit-modal">
+    <div class="edit-modal-content">
+      <h3>Edit Cheque</h3>
+      <form id="editChequeForm">
+        <input type="hidden" id="editChequeId" name="id">
+        
+        <div class="form-group">
+          <label for="editSignedDate">Signed Date</label>
           <input type="date" id="editSignedDate" name="signedDate" required>
-          
-          <label for="editChequeNumber">Cheque Number:</label>
+        </div>
+        
+        <div class="form-group">
+          <label for="editChequeNumber">Cheque Number</label>
           <input type="text" id="editChequeNumber" name="chequeNumber" required>
-          
-          <label for="editAmount">Amount:</label>
+        </div>
+        
+        <div class="form-group">
+          <label for="editAmount">Amount</label>
           <input type="number" id="editAmount" name="amount" step="0.01" required>
-          
-          <label for="editReleaseDate">Release Date:</label>
+        </div>
+        
+        <div class="form-group">
+          <label for="editReleaseDate">Release Date</label>
           <input type="date" id="editReleaseDate" name="releaseDate" required>
-          
-          <label for="editRemark">Remark:</label>
-          <textarea id="editRemark" name="remark" maxlength="500" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="editRemark">Remark</label>
+          <textarea id="editRemark" name="remark" required></textarea>
+        </div>
 
-          <label for="editStatus">Status:</label>
+        <div class="form-group">
+          <label for="editStatus">Status</label>
           <select id="editStatus" name="status" required>
             <option value="Pending">Pending</option>
             <option value="Released">Released</option>
           </select>
-          
-          <div>
-            <button type="submit" class="btn">Save Changes</button>
-            <button type="button" id="cancelEdit" class="btn">Cancel</button>
-          </div>
-        </form>
-      </div>
+        </div>
+        
+        <div class="action-buttons">
+          <button type="submit">Save</button>
+          <button type="button" id="cancelEdit">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 
