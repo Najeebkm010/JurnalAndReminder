@@ -191,6 +191,190 @@ app.post("/get-cheque", requireAuth, async (req, res) => {
   }
 });
 
+// const ExcelJS = require('exceljs');
+
+// const generateFormattedExcel = async (cheques, startDate, endDate) => {
+//   const workbook = new ExcelJS.Workbook();
+//   const worksheet = workbook.addWorksheet('Cheque Report');
+
+//   // Add title and date range
+//   worksheet.mergeCells('A1:F1');
+//   worksheet.mergeCells('A2:F2');
+//   worksheet.getCell('A1').value = 'Cheque Management Report';
+//   worksheet.getCell('A2').value = `Date Range: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`;
+//   worksheet.getCell('A3').value = ''; // Free row
+
+//   // Apply styles to title and date range
+//   worksheet.getCell('A1').font = { bold: true, size: 11 };
+//   worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+//   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+//   // Add headers
+//   const headers = ['Cheque Number', 'Signed Date', 'Amount', 'Release Date', 'Remark', 'Status'];
+//   const headerRow = worksheet.addRow(headers);
+
+//   // Apply styles to each header cell
+//   headerRow.eachCell((cell, colNumber) => {
+//     if (colNumber <= headers.length) { // Ensure styling applies only to defined headers
+//       cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+//       cell.alignment = { horizontal: 'center', vertical: 'middle' }; // Center align header cells
+//       cell.fill = {
+//         type: 'pattern',
+//         pattern: 'solid',
+//         fgColor: { argb: '4472C4' },
+//       };
+//     }
+//   });
+
+//   // Add data rows
+//   cheques.forEach(cheque => {
+//     worksheet.addRow([
+//       cheque.chequeNumber,
+//       new Date(cheque.signedDate).toLocaleDateString(),
+//       cheque.amount,
+//       new Date(cheque.releaseDate).toLocaleDateString(),
+//       cheque.remark,
+//       cheque.status
+//     ]);
+//   });
+
+//   // Set column widths
+//   const columnWidths = [15, 12, 15, 20, 30, 15];
+//   columnWidths.forEach((width, index) => {
+//     worksheet.getColumn(index + 1).width = width;
+//   });
+
+//   // Apply border to all cells
+//   worksheet.eachRow((row, rowNumber) => {
+//     row.eachCell((cell) => {
+//       cell.border = {
+//         top: { style: 'thin' },
+//         left: { style: 'thin' },
+//         bottom: { style: 'thin' },
+//         right: { style: 'thin' }
+//       };
+//       cell.alignment = { horizontal: 'left' }; // left alignment for all cells
+//     });
+//   });
+
+//   // Write to buffer
+//   const buffer = await workbook.xlsx.writeBuffer();
+//   return buffer;
+// };
+
+const ExcelJS = require('exceljs');
+
+const generateFormattedExcel = async (cheques, startDate, endDate) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Cheque Report');
+
+  // Set column widths
+  // worksheet.columns = [
+  //   { width: 20 }, // Cheque Number
+  //   { width: 12 }, // Signed Date
+  //   { width: 12 }, // Amount
+  //   { width: 15 }, // Release Date
+  //   { width: 20 }, // Remark
+  //   { width: 12 }  // Status
+  // ];
+
+  worksheet.columns = [
+    { width: 20, style: { numFmt: '@' } }, // Cheque Number (as text)
+    { width: 12, style: { numFmt: 'dd/mm/yyyy' } }, // Signed Date
+    { width: 12, style: { numFmt: '#,##0.00' } }, // Amount
+    { width: 15, style: { numFmt: 'dd/mm/yyyy' } }, // Release Date
+    { width: 20, style: { numFmt: '@' } }, // Remark
+    { width: 12, style: { numFmt: '@' } }  // Status
+  ];
+
+  // Add title and date range
+  worksheet.mergeCells('A1:F1');
+  worksheet.mergeCells('A2:F2');
+  
+  // Set row heights
+  // worksheet.getRow(1).height = 20; // Title row height
+  // worksheet.getRow(2).height = 20; // Date range row height
+  // worksheet.getRow(4).height = 20; // Header row height
+
+  worksheet.getCell('A1').value = 'Cheque Management Report';
+  worksheet.getCell('A2').value = `Date Range: ${new Date(startDate).toLocaleDateString()} to ${new Date(endDate).toLocaleDateString()}`;
+  worksheet.getCell('A3').value = ''; // Free row
+
+  // Apply styles to title and date range
+  worksheet.getCell('A1').font = { bold: true, size: 11 };
+  worksheet.getCell('A1').alignment = { 
+    horizontal: 'center', 
+    vertical: 'middle',
+    wrapText: true 
+  };
+  worksheet.getCell('A2').alignment = { 
+    horizontal: 'center', 
+    vertical: 'middle',
+    wrapText: true 
+  };
+
+  // Add headers
+  const headers = ['Cheque Number', 'Signed Date', 'Amount', 'Release Date', 'Remark', 'Status'];
+  const headerRow = worksheet.addRow(headers);
+
+  // Apply styles to each header cell
+  headerRow.eachCell((cell, colNumber) => {
+    if (colNumber <= headers.length) {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFF' },
+        size: 11
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle',
+        wrapText: true
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: '4472C4' }
+      };
+      // Add borders to header cells
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    }
+  });
+
+  // Add data rows
+  cheques.forEach(cheque => {
+    const row = worksheet.addRow([
+      cheque.chequeNumber,
+      new Date(cheque.signedDate).toLocaleDateString(),
+      cheque.amount,
+      new Date(cheque.releaseDate).toLocaleDateString(),
+      cheque.remark,
+      cheque.status
+    ]);
+
+    // Center align all cells in the row
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'left', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+  });
+
+  // Write to buffer
+  const buffer = await workbook.xlsx.writeBuffer();
+  return buffer;
+};
+
+module.exports = generateFormattedExcel;
+
 app.get("/download-cheques", requireAuth, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
@@ -205,14 +389,21 @@ app.get("/download-cheques", requireAuth, async (req, res) => {
     
     const cheques = await Cheque.find(query).sort({ releaseDate: 1 });
     
-    let csv = "Cheque Number,Signed Date,Amount,Release Date,Remark,Status\n";
-    cheques.forEach((cheque) => {
-      csv += `${cheque.chequeNumber},${new Date(cheque.signedDate).toLocaleDateString()},${cheque.amount},${new Date(cheque.releaseDate).toLocaleDateString()},${cheque.remark},${cheque.status}\n`;
-    });
+    // Generate the Excel buffer
+    const excelBuffer = await generateFormattedExcel(cheques, startDate, endDate);
     
-    res.header("Content-Type", "text/csv");
-    res.attachment("cheques.csv");
-    res.send(csv);
+    // Set response headers
+    res.setHeader(
+      'Content-Type', 
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition', 
+      'attachment; filename=cheques_report.xlsx'
+    );
+    
+    // Send the buffer
+    return res.send(excelBuffer);
   } catch (error) {
     console.error("Error downloading cheques:", error);
     res.status(500).send("Server error");
