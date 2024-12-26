@@ -3,163 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>View Cheques</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background: white;
-      padding: 40px 20px;
-    }
-
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 40px;
-      border: 2px solid black;
-    }
-
-    h2, h3 {
-      font-size: 24px;
-      margin-bottom: 32px;
-      text-align: center;
-    }
-
-    .form-container {
-      margin-bottom: 40px;
-    }
-
-    .form-group {
-      margin-bottom: 24px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid black;
-      font-size: 16px;
-      background: white;
-    }
-
-    button, .btn {
-      padding: 12px 24px;
-      background: white;
-      border: 2px solid black;
-      font-size: 16px;
-      cursor: pointer;
-      text-decoration: none;
-      color: black;
-      display: inline-block;
-      transition: all 0.2s;
-    }
-
-    button:hover, .btn:hover {
-      background: black;
-      color: white;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 32px 0;
-      border: 2px solid black;
-    }
-
-    th, td {
-      padding: 16px;
-      border: 1px solid black;
-      text-align: left;
-    }
-
-    th {
-      background: black;
-      color: white;
-    }
-
-    .status-pending { font-weight: bold; }
-    .status-released { font-weight: bold; }
-
-    .edit-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .edit-modal-content {
-      background: white;
-      padding: 40px;
-      max-width: 500px;
-      width: 90%;
-      border: 2px solid black;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 16px;
-      margin-top: 24px;
-    }
-
-    .action-buttons .btn {
-      flex: 1;
-    }
-
-    textarea {
-      min-height: 100px;
-      resize: vertical;
-    }
-  </style>
+  <title>Premium Dates & Nuts - View Cheques</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h2>Filter and View Cheques</h2>
+    <div class="logo-container">
+      <img src="/api/placeholder/100/100" alt="Dates & Nuts Logo" class="logo">
+    </div>
+    <h2>Cheque Records</h2>
 
-    <div class="form-container">
+    <div class="filter-section">
       <form id="cheque-filter-form">
-        <div class="form-group">
-          <label for="startDate">Start Date</label>
-          <input type="date" id="startDate" name="startDate" required>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="startDate">From Date</label>
+            <input type="date" id="startDate" name="startDate" required>
+          </div>
+          <div class="form-group">
+            <label for="endDate">To Date</label>
+            <input type="date" id="endDate" name="endDate" required>
+          </div>
         </div>
-
-        <div class="form-group">
-          <label for="endDate">End Date</label>
-          <input type="date" id="endDate" name="endDate" required>
-        </div>
-
-        <button type="submit">Filter Cheques</button>
+        <button type="submit" class="btn">View Records</button>
       </form>
     </div>
 
-    <div id="cheque-list">
-      <p>Use the filter above to view cheques.</p>
+    <div id="cheque-list" class="records-container">
+      <p class="placeholder-text">Please select a date range to view records.</p>
     </div>
 
     <div class="action-buttons">
-      <button id="download-btn">Download CSV</button>
-      <a href="/cheque-management" class="btn">Back</a>
+      <button id="download-btn" class="btn btn-secondary">
+        <span class="icon">⬇️</span>
+        Export to CSV
+      </button>
+      <a href="/cheque-management" class="btn btn-secondary">Return to Dashboard</a>
     </div>
   </div>
 
   <div id="editModal" class="edit-modal">
     <div class="edit-modal-content">
-      <h3>Edit Cheque</h3>
+      <h3>Update Cheque Record</h3>
       <form id="editChequeForm">
         <input type="hidden" id="editChequeId" name="id">
         
@@ -204,7 +91,7 @@
     </div>
   </div>
 
-  <script>
+    <script>
     $(document).ready(function () {
       let currentCheques = [];
 
