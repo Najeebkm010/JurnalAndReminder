@@ -134,12 +134,20 @@ app.get("/get-cheque", requireAuth, (req, res) => {
 });
 
 // Cheque Management Routes
+// Server-side code (app.js or similar)
 app.post("/add-cheque", requireAuth, async (req, res) => {
   try {
-    const { signedDate, chequeNumber, amount, releaseDate, remark } = req.body;
+    const { signedDate, chequeNumber, amount, releaseDate, remark, status } = req.body;
     
+    // Validate dates
     if (new Date(signedDate) > new Date(releaseDate)) {
       return res.status(400).send("Signed date cannot be after release date");
+    }
+
+    // Validate status
+    const validStatuses = ['Pending', 'Released'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).send("Invalid status value");
     }
 
     const newCheque = new Cheque({
@@ -148,7 +156,7 @@ app.post("/add-cheque", requireAuth, async (req, res) => {
       amount: parseFloat(amount),
       releaseDate,
       remark,
-      status: 'Pending' // Default status
+      status // Use the status from the form
     });
     
     await newCheque.save();
