@@ -1,16 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&display=swap');
 
-/* Global Styles */
+/* Existing global styles remain the same */
 :root {
-  --primary-color: #402101;    /* Rich brown from login page */
-  --secondary-color: #593116;  /* Slightly lighter brown */
-  --text-dark: #333333;        /* Dark text color */
-  --text-light: #FFFFFF;       /* White text */
+  --primary-color: #402101;
+  --secondary-color: #593116;
+  --text-dark: #333333;
+  --text-light: #FFFFFF;
   --border-color: rgba(0, 0, 0, 0.2);
   --transition: all 0.3s ease;
   --shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
   --border-radius: 6px;
 }
+
 
 * {
   margin: 0;
@@ -33,7 +34,7 @@ body {
   max-width: 1000px;
   width: 100%;
   background: #fff;
-  padding: 40px 30px;
+  padding: 60px 30px;
   box-shadow: var(--shadow);
   perspective: 2700px;
 }
@@ -341,4 +342,212 @@ tr:hover {
     padding: 6px 12px;
     font-size: 13px;
   }
+}
+
+/* Add Login specific styles */
+.cover {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 50%;
+  z-index: 98;
+  transition: all 1s ease;
+  transform-origin: left;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+}
+
+#flip:checked ~ .cover {
+  transform: rotateY(-180deg);
+}
+
+#flip:checked ~ .forms .login-form {
+  pointer-events: none;
+}
+
+.cover .front,
+.cover .back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.cover .back {
+  transform: rotateY(180deg);
+}
+
+.cover img {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  z-index: 10;
+}
+
+.cover .text {
+  position: absolute;
+  z-index: 10;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover .text::before {
+  content: '';
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  opacity: 0.5;
+  background: var(--primary-color);
+}
+
+.cover .text .text-1,
+.cover .text .text-2 {
+  z-index: 20;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text-light);
+  text-align: center;
+}
+
+.cover .text .text-2 {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.forms {
+  height: 100%;
+  width: 100%;
+  background: #fff;
+}
+
+.form-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.form-content .login-form,
+.form-content .signup-form {
+  width: calc(100% / 2 - 25px);
+}
+
+#flip {
+  display: none;
+}
+
+/* Login page responsive styles */
+@media (max-width: 730px) {
+  .cover {
+    display: none;
+  }
+
+  .form-content .login-form,
+  .form-content .signup-form {
+    width: 100%;
+  }
+
+  .form-content .signup-form {
+    display: none;
+  }
+
+  #flip:checked ~ .forms .signup-form {
+    display: block;
+  }
+
+  #flip:checked ~ .forms .login-form {
+    display: none;
+  }
+}
+
+
+
+.edit-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.edit-modal-content {
+  background: #fff;
+  padding: 40px 30px;
+  border-radius: var(--border-radius);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+/* Updated Modal Action Buttons Container */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 25px;
+  justify-content: flex-end;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Responsive Modal Adjustments */
+@media (max-width: 480px) {
+  .edit-modal {
+    padding: 10px;
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+  
+  .edit-modal-content {
+    max-height: 85vh;
+    margin: 20px 0;
+    padding: 30px 20px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 12px;
+    margin-top: 20px;
+  }
+  
+  .action-buttons button {
+    width: 100%;
+  }
+}
+
+/* Scrollbar Styling */
+.edit-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.edit-modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.edit-modal-content::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.edit-modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
 }
